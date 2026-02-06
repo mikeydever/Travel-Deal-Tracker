@@ -1,12 +1,19 @@
 "use client";
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import type { TooltipProps } from "recharts";
 
 interface HotelSparklineProps {
   data: Array<{ checkedAt: string; avgPrice: number }>;
 }
 
 const formatter = (value: number) => `$${value.toFixed(0)}`;
+
+const tooltipFormatter: TooltipProps<number, string>["formatter"] = (value) =>
+  formatter(Number(value ?? 0));
+
+const tooltipLabelFormatter: TooltipProps<number, string>["labelFormatter"] = (label) =>
+  new Date(label ?? "").toLocaleDateString("en", { month: "short", day: "numeric" });
 
 export function HotelSparkline({ data }: HotelSparklineProps) {
   return (
@@ -19,10 +26,8 @@ export function HotelSparkline({ data }: HotelSparklineProps) {
           </linearGradient>
         </defs>
         <Tooltip
-          formatter={(value: number) => formatter(Number(value))}
-          labelFormatter={(label: string) =>
-            new Date(label).toLocaleDateString("en", { month: "short", day: "numeric" })
-          }
+          formatter={tooltipFormatter}
+          labelFormatter={tooltipLabelFormatter}
           contentStyle={{ borderRadius: 12, borderColor: "#d2d5da" }}
         />
         <Area

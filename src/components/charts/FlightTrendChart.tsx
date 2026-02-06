@@ -9,6 +9,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import type { TooltipProps } from "recharts";
 
 interface FlightTrendChartProps {
   data: Array<{
@@ -21,6 +22,13 @@ const formatLabel = (value: string) =>
   new Date(value).toLocaleDateString("en", { month: "short", day: "numeric" });
 
 const currencyFormatter = (value: number) => `$${value.toFixed(0)}`;
+
+const tooltipFormatter: TooltipProps<number, string>["formatter"] = (value) =>
+  currencyFormatter(Number(value ?? 0));
+
+const tooltipLabelFormatter: TooltipProps<number, string>["labelFormatter"] = (
+  label
+) => `Checked ${formatLabel(label ?? "")}`;
 
 export function FlightTrendChart({ data }: FlightTrendChartProps) {
   return (
@@ -43,8 +51,8 @@ export function FlightTrendChart({ data }: FlightTrendChartProps) {
           width={60}
         />
         <Tooltip
-          formatter={(value: number) => currencyFormatter(Number(value))}
-          labelFormatter={(label: string) => `Checked ${formatLabel(label)}`}
+          formatter={tooltipFormatter}
+          labelFormatter={tooltipLabelFormatter}
           contentStyle={{ borderRadius: 16, borderColor: "#d2d5da" }}
         />
         <Line
