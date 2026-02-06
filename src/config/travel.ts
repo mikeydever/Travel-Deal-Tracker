@@ -1,8 +1,8 @@
 export const PRIMARY_TRIP = {
   origin: "YVR",
   destination: "BKK",
-  departDate: "2025-10-28",
-  returnDate: "2025-11-18",
+  departDate: "2026-10-28",
+  returnDate: "2026-11-18",
   tripLengthDays: 22,
   cabin: "Economy",
 };

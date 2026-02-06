@@ -1,3 +1,23 @@
+export interface FlightLegMeta {
+  carrierName?: string;
+  carrierCode?: string;
+  flightCode?: string;
+  stops?: number;
+  stopsText?: string;
+  durationMinutes?: number;
+  fareClass?: string;
+  price?: number;
+  currency?: string;
+}
+
+export interface FlightMetadata {
+  source?: "mock" | "rapidapi";
+  outbound?: FlightLegMeta;
+  returnLeg?: FlightLegMeta;
+  combinedStops?: number;
+  combinedDurationMinutes?: number;
+}
+
 export interface FlightQuote {
   carrier: string;
   fareClass: string;
@@ -5,6 +25,7 @@ export interface FlightQuote {
   currency: string;
   durationHours: number;
   stops: number;
+  metadata?: FlightMetadata;
 }
 
 export interface FlightSampleInput {
@@ -15,6 +36,7 @@ export interface FlightSampleInput {
   price: number;
   currency: string;
   checkedAt?: string;
+  metadata?: FlightMetadata;
 }
 
 export interface HotelAverageResponse {

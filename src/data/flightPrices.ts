@@ -1,9 +1,9 @@
 import { PRIMARY_TRIP } from "@/config/travel";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase/client";
-import type { FlightSampleInput } from "@/types/pricing";
+import type { FlightMetadata, FlightSampleInput } from "@/types/pricing";
 
 const SELECT_FIELDS =
-  "id, origin, destination, depart_date, return_date, price, currency, checked_at";
+  "id, origin, destination, depart_date, return_date, price, currency, checked_at, metadata";
 
 export interface FlightPriceRow {
   id: string;
@@ -14,6 +14,7 @@ export interface FlightPriceRow {
   price: number;
   currency: string;
   checked_at: string;
+  metadata?: FlightMetadata;
 }
 
 export const saveFlightSample = async (sample: FlightSampleInput) => {
@@ -26,6 +27,7 @@ export const saveFlightSample = async (sample: FlightSampleInput) => {
     price: sample.price,
     currency: sample.currency,
     checked_at: sample.checkedAt ?? new Date().toISOString(),
+    metadata: sample.metadata ?? {},
   };
 
   const { data, error } = await client
@@ -57,6 +59,7 @@ const buildFallbackFlightHistory = (limit = 14): FlightPriceRow[] => {
       price: Math.round(price * 100) / 100,
       currency: "CAD",
       checked_at: timestamp.toISOString(),
+      metadata: { source: "mock" },
     };
   });
 };

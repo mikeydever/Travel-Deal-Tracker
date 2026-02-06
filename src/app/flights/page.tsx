@@ -5,8 +5,6 @@ import { getLatestFlightSample, getRecentFlightPrices } from "@/data/flightPrice
 
 export const dynamic = "force-dynamic";
 
-const currency = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
-
 const formatDateTime = (value: string | Date) =>
   new Date(value).toLocaleString("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -16,6 +14,9 @@ export default async function FlightsPage() {
     getLatestFlightSample(),
   ]);
 
+  const currencyCode = latest?.currency ?? history[0]?.currency ?? "CAD";
+  const currency = new Intl.NumberFormat("en-CA", { style: "currency", currency: currencyCode });
+
   const chartData = history.map((row) => ({
     checkedAt: row.checked_at,
     price: row.price,
@@ -24,6 +25,9 @@ export default async function FlightsPage() {
   const previousSample = history.length > 1 ? history[history.length - 2] : history[history.length - 1];
   const priceDelta = latest && previousSample ? latest.price - previousSample.price : 0;
   const deltaPercentage = previousSample ? (priceDelta / previousSample.price) * 100 : 0;
+  const carrierSnapshot = latest?.metadata;
+  const outboundLeg = carrierSnapshot?.outbound;
+  const returnLeg = carrierSnapshot?.returnLeg;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 sm:px-6 lg:px-8">
@@ -86,11 +90,25 @@ export default async function FlightsPage() {
         </article>
         <article className="rounded-3xl border border-dashed border-[var(--card-border)] bg-white/80 p-6 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-500">Carrier note</p>
-          <h3 className="mt-2 text-lg font-semibold text-slate-900">Awaiting live carrier data</h3>
-          <p className="mt-2 text-sm text-slate-600">
-            Once the flight API is wired up, we’ll capture fare class, stops, and duration metadata here.
-          </p>
-          <p className="mt-1 text-xs text-slate-500">Current mock adapter focuses on pricing only.</p>
+          <h3 className="mt-2 text-lg font-semibold text-slate-900">
+            {outboundLeg?.carrierName || outboundLeg?.carrierCode ? "Live carrier snapshot" : "Awaiting live carrier data"}
+          </h3>
+          {outboundLeg?.carrierName || outboundLeg?.carrierCode ? (
+            <div className="mt-2 text-sm text-slate-600">
+              <p>{formatLeg("Outbound", outboundLeg)}</p>
+              {returnLeg && <p className="mt-1">{formatLeg("Return", returnLeg)}</p>}
+              <p className="mt-2 text-xs text-slate-500">
+                Source: {carrierSnapshot?.source === "rapidapi" ? "RapidAPI flight fare search" : "Live feed"}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-slate-600">
+                Once the flight API is wired up, we’ll capture fare class, stops, and duration metadata here.
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Current mock adapter focuses on pricing only.</p>
+            </>
+          )}
         </article>
       </section>
     </div>
@@ -105,4 +123,20 @@ const getMedianPrice = (samples: { price: number }[]) => {
     return (sorted[mid - 1].price + sorted[mid].price) / 2;
   }
   return sorted[mid].price;
+};
+
+const formatLeg = (label: string, leg: { carrierName?: string; carrierCode?: string; flightCode?: string; stops?: number; stopsText?: string; durationMinutes?: number }) => {
+  const carrier = leg.carrierName ?? leg.carrierCode ?? "Carrier TBD";
+  const flight = leg.flightCode ? ` (${leg.flightCode})` : \"\";
+  const stops = leg.stopsText ?? (typeof leg.stops === \"number\" ? `${leg.stops} stops` : \"Stops n/a\");
+  const duration = leg.durationMinutes ? formatDuration(leg.durationMinutes) : \"Duration n/a\";
+  return `${label}: ${carrier}${flight} • ${stops} • ${duration}`;
+};
+
+const formatDuration = (minutes: number) => {
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  const hoursLabel = hours ? `${hours}h` : \"0h\";
+  const minutesLabel = `${remaining.toString().padStart(2, \"0\")}m`;
+  return `${hoursLabel} ${minutesLabel}`;
 };

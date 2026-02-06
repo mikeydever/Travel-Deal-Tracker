@@ -1,4 +1,4 @@
-import { fetchMockFlightQuotes } from "@/agents/adapters/flightApi";
+import { fetchFlightQuotes } from "@/agents/adapters/flightApi";
 import { PRIMARY_TRIP } from "@/config/travel";
 import { saveFlightSample } from "@/data/flightPrices";
 
@@ -10,11 +10,12 @@ export interface FlightAgentResult {
 }
 
 export const runFlightAgent = async (): Promise<FlightAgentResult> => {
-  const quotes = await fetchMockFlightQuotes({
+  const quotes = await fetchFlightQuotes({
     origin: PRIMARY_TRIP.origin,
     destination: PRIMARY_TRIP.destination,
     departDate: PRIMARY_TRIP.departDate,
     returnDate: PRIMARY_TRIP.returnDate,
+    cabin: PRIMARY_TRIP.cabin,
   });
 
   if (!quotes.length) {
@@ -30,6 +31,7 @@ export const runFlightAgent = async (): Promise<FlightAgentResult> => {
     returnDate: PRIMARY_TRIP.returnDate,
     price: cheapest.price,
     currency: cheapest.currency,
+    metadata: cheapest.metadata,
   });
 
   return {

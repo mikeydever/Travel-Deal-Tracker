@@ -22,6 +22,7 @@ export const evaluateDealTriggers = async () => {
   const flightHistory = await getRecentFlightPrices(30);
   if (flightHistory.length >= 2) {
     const latest = flightHistory[flightHistory.length - 1];
+    const currency = latest.currency ?? "CAD";
     const avg30 =
       flightHistory.reduce((sum, row) => sum + row.price, 0) / flightHistory.length;
     const minPrice = Math.min(...flightHistory.map((row) => row.price));
@@ -31,14 +32,14 @@ export const evaluateDealTriggers = async () => {
         type: ALERT_TYPES.FLIGHT_DROP,
         message: `Flight fare ${PRIMARY_TRIP.origin}→${PRIMARY_TRIP.destination} is ${Math.round(
           ((avg30 - latest.price) / avg30) * 100
-        )}% below 30-day avg (${avg30.toFixed(0)} CAD).`,
+        )}% below 30-day avg (${avg30.toFixed(0)} ${currency}).`,
       });
     }
 
     if (latest.price <= minPrice) {
       triggers.push({
         type: ALERT_TYPES.FLIGHT_LOW,
-        message: `Flight fare ${PRIMARY_TRIP.origin}→${PRIMARY_TRIP.destination} hit a new low at ${latest.price} CAD.`,
+        message: `Flight fare ${PRIMARY_TRIP.origin}→${PRIMARY_TRIP.destination} hit a new low at ${latest.price} ${currency}.`,
       });
     }
   }
