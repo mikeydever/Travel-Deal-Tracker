@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import {
   LineChart,
   Line,
@@ -9,7 +11,6 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import type { TooltipProps } from "recharts";
 
 interface FlightTrendChartProps {
   data: Array<{
@@ -22,13 +23,6 @@ const formatLabel = (value: string) =>
   new Date(value).toLocaleDateString("en", { month: "short", day: "numeric" });
 
 const currencyFormatter = (value: number) => `$${value.toFixed(0)}`;
-
-const tooltipFormatter: TooltipProps<number, string>["formatter"] = (value) =>
-  currencyFormatter(Number(value ?? 0));
-
-const tooltipLabelFormatter: TooltipProps<number, string>["labelFormatter"] = (
-  label
-) => `Checked ${formatLabel(label ?? "")}`;
 
 export function FlightTrendChart({ data }: FlightTrendChartProps) {
   return (
@@ -51,8 +45,12 @@ export function FlightTrendChart({ data }: FlightTrendChartProps) {
           width={60}
         />
         <Tooltip
-          formatter={tooltipFormatter}
-          labelFormatter={tooltipLabelFormatter}
+          formatter={(value: number | undefined) =>
+            currencyFormatter(Number(value ?? 0))
+          }
+          labelFormatter={(label: ReactNode) =>
+            typeof label === "string" ? `Checked ${formatLabel(label)}` : ""
+          }
           contentStyle={{ borderRadius: 16, borderColor: "#d2d5da" }}
         />
         <Line
