@@ -124,3 +124,4 @@ All pages are built with responsive Tailwind layouts so they stay readable on mo
 - Predictive price modeling
 - AI deal scoring
 - Telegram / SMS alerts
+ 
