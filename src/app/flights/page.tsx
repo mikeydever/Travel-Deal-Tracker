@@ -127,16 +127,16 @@ const getMedianPrice = (samples: { price: number }[]) => {
 
 const formatLeg = (label: string, leg: { carrierName?: string; carrierCode?: string; flightCode?: string; stops?: number; stopsText?: string; durationMinutes?: number }) => {
   const carrier = leg.carrierName ?? leg.carrierCode ?? "Carrier TBD";
-  const flight = leg.flightCode ? ` (${leg.flightCode})` : \"\";
-  const stops = leg.stopsText ?? (typeof leg.stops === \"number\" ? `${leg.stops} stops` : \"Stops n/a\");
-  const duration = leg.durationMinutes ? formatDuration(leg.durationMinutes) : \"Duration n/a\";
+  const flight = leg.flightCode ? ` (${leg.flightCode})` : "";
+  const stops = leg.stopsText ?? (typeof leg.stops === "number" ? `${leg.stops} stops` : "Stops n/a");
+  const duration = leg.durationMinutes ? formatDuration(leg.durationMinutes) : "Duration n/a";
   return `${label}: ${carrier}${flight} • ${stops} • ${duration}`;
 };
 
 const formatDuration = (minutes: number) => {
   const hours = Math.floor(minutes / 60);
   const remaining = minutes % 60;
-  const hoursLabel = hours ? `${hours}h` : \"0h\";
-  const minutesLabel = `${remaining.toString().padStart(2, \"0\")}m`;
+  const hoursLabel = hours ? `${hours}h` : "0h";
+  const minutesLabel = `${remaining.toString().padStart(2, "0")}m`;
   return `${hoursLabel} ${minutesLabel}`;
 };
