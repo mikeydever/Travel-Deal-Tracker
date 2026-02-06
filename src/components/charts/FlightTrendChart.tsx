@@ -48,6 +48,7 @@ export function FlightTrendChart({ data }: FlightTrendChartProps) {
           formatter={(value: number | undefined) =>
             currencyFormatter(Number(value ?? 0))
           }
+
           labelFormatter={(label: ReactNode) =>
             typeof label === "string" ? `Checked ${formatLabel(label)}` : ""
           }
