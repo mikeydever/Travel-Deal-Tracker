@@ -1,0 +1,51 @@
+import { NextResponse } from "next/server";
+
+import { runFlightAgent } from "@/agents/flightAgent";
+import { runHotelAgent } from "@/agents/hotelAgent";
+import { env } from "@/lib/env";
+import { evaluateDealTriggers } from "@/services/dealDetection";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const authorize = (request: Request) => {
+  if (!env.CRON_SECRET) {
+    console.warn("[cron] CRON_SECRET not set – allowing request in dev mode");
+    return true;
+  }
+
+  const header = request.headers.get("authorization");
+  if (!header) return false;
+  const token = header.replace("Bearer ", "");
+  return token === env.CRON_SECRET;
+};
+
+export async function POST(request: Request) {
+  if (!authorize(request)) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const flightResult = await runFlightAgent();
+    const hotelResult = await runHotelAgent();
+    const alerts = await evaluateDealTriggers();
+
+    return NextResponse.json({
+      ok: true,
+      flightResult,
+      hotelResult,
+      alerts,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[cron] job failed", error);
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : "unknown" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: Request) {
+  return POST(request);
+}
