@@ -7,6 +7,7 @@ export interface FlightAgentResult {
   price?: number;
   carrier?: string;
   fareClass?: string;
+  source?: "mock" | "rapidapi";
 }
 
 export const runFlightAgent = async (): Promise<FlightAgentResult> => {
@@ -39,5 +40,6 @@ export const runFlightAgent = async (): Promise<FlightAgentResult> => {
     price: cheapest.price,
     carrier: cheapest.carrier,
     fareClass: cheapest.fareClass,
+    source: cheapest.metadata?.source,
   };
 };
