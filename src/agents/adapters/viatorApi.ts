@@ -147,6 +147,7 @@ export const normalizeViatorProduct = (product: ViatorProduct) => {
 
   const currency = pickFirstDefined(
     toString(get(product, "pricing.currencyCode")),
+    toString(get(product, "pricing.currency")),
     toString(get(product, "currency")),
     toString(get(product, "price.currency"))
   );
