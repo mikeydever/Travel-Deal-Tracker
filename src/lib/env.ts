@@ -5,7 +5,11 @@ type OptionalKey =
   | "HOTEL_API_KEY"
   | "CRON_SECRET"
   | "RESEND_API_KEY"
-  | "ALERT_EMAIL_TO";
+  | "ALERT_EMAIL_TO"
+  | "PEXELS_API_KEY"
+  | "BRAVE_SEARCH_API_KEY"
+  | "OPENAI_API_KEY"
+  | "FLIGHT_API_DISABLED_UNTIL";
 
 const warn = (message: string) => {
   if (process.env.NODE_ENV !== "production") {
@@ -34,6 +38,10 @@ export const env: Record<RequiredKey | OptionalKey, string> = {
   CRON_SECRET: readEnv("CRON_SECRET"),
   RESEND_API_KEY: readEnv("RESEND_API_KEY"),
   ALERT_EMAIL_TO: readEnv("ALERT_EMAIL_TO"),
+  PEXELS_API_KEY: readEnv("PEXELS_API_KEY"),
+  BRAVE_SEARCH_API_KEY: readEnv("BRAVE_SEARCH_API_KEY"),
+  OPENAI_API_KEY: readEnv("OPENAI_API_KEY"),
+  FLIGHT_API_DISABLED_UNTIL: readEnv("FLIGHT_API_DISABLED_UNTIL"),
 };
 
 export type Env = typeof env;

@@ -16,6 +16,23 @@ export interface FlightMetadata {
   returnLeg?: FlightLegMeta;
   combinedStops?: number;
   combinedDurationMinutes?: number;
+  offers?: {
+    topOverall?: FlightOffer[];
+    topDirect?: FlightOffer[];
+  };
+}
+
+export interface FlightOffer {
+  carrier: string;
+  fareClass: string;
+  price: number;
+  currency: string;
+  durationHours?: number;
+  stops: number;
+  outbound?: FlightLegMeta;
+  returnLeg?: FlightLegMeta;
+  combinedStops?: number;
+  combinedDurationMinutes?: number;
 }
 
 export interface FlightQuote {

@@ -1,7 +1,9 @@
 import { AGENT_PIPELINES, PRIMARY_TRIP, THAI_HUB_CITIES } from "@/config/travel";
 import { NavPills } from "@/components/NavPills";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { getLatestFlightSample, getRecentFlightPrices } from "@/data/flightPrices";
 import { getLatestHotelSnapshots } from "@/data/hotelPrices";
+import { getDailyPhoto } from "@/data/dailyPhotos";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +11,10 @@ const flightCurrency = new Intl.NumberFormat("en-CA", { style: "currency", curre
 const currencyFormatters = new Map<string, Intl.NumberFormat>();
 const formatCurrency = (value: number, currency = "CAD") => {
   if (!currencyFormatters.has(currency)) {
-    currencyFormatters.set(currency, new Intl.NumberFormat("en-CA", { style: "currency", currency }));
+    currencyFormatters.set(
+      currency,
+      new Intl.NumberFormat("en-CA", { style: "currency", currency })
+    );
   }
   return currencyFormatters.get(currency)?.format(value) ?? `${value.toFixed(0)} ${currency}`;
 };
@@ -30,76 +35,116 @@ const formatDateTime = (value: string | Date) =>
 
 export default async function Home() {
   const today = Intl.DateTimeFormat("en", { dateStyle: "full" }).format(new Date());
-  const [latestFlight, flightHistory, hotelSnapshots] = await Promise.all([
+  const [latestFlight, flightHistory, hotelSnapshots, dailyPhoto] = await Promise.all([
     getLatestFlightSample(),
     getRecentFlightPrices(14),
     getLatestHotelSnapshots(),
+    getDailyPhoto(),
   ]);
 
-  const previousFlight = flightHistory.length > 1 ? flightHistory[flightHistory.length - 2] : flightHistory[0];
+  const previousFlight =
+    flightHistory.length > 1 ? flightHistory[flightHistory.length - 2] : flightHistory[0];
   const flightDelta = latestFlight && previousFlight ? latestFlight.price - previousFlight.price : 0;
 
   return (
-    <div className="min-h-screen bg-transparent pb-16">
+    <div className="min-h-screen pb-16">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pt-10 sm:px-6 lg:px-8">
-        <section className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-8 shadow-[var(--glow)] backdrop-blur">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Travel Deal Tracker</p>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">
-                Thailand price intelligence for YVR departures
+        <section className="relative overflow-hidden rounded-[32px] border border-[var(--card-border)] bg-[var(--card)] shadow-[var(--glow)]">
+          <div className="absolute inset-0">
+            {dailyPhoto?.image_url && (
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                  backgroundImage: `url(${dailyPhoto.image_url_large ?? dailyPhoto.image_url})`,
+                }}
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-black/80" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,194,91,0.35),_transparent_55%)]" />
+          </div>
+
+          <div className="relative z-10 flex flex-col gap-6 p-8 text-white lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-4">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/70">Thailand Daily</p>
+                <ThemeToggle className="border-white/20 bg-white/10 text-white/70" />
+              </div>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl font-[var(--font-display)]">
+                Live price intelligence for the Vancouver → Thailand corridor.
               </h1>
-              <p className="mt-3 max-w-2xl text-base text-slate-600">
-                We follow the Vancouver → Thailand corridor daily, store every fare + hotel datapoint, and surface deals the moment they beat the 30-day baseline.
+              <p className="mt-4 text-base text-white/80 sm:text-lg">
+                Daily flight and hotel signals, plus curated experiences and itinerary ideas, tuned to the
+                season’s best windows.
               </p>
             </div>
-            <div className="rounded-2xl border border-[var(--card-border)] bg-white/70 px-6 py-4 text-sm text-slate-600 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Today</p>
-              <p className="text-lg font-semibold text-slate-900">{today}</p>
-              <p className="mt-2 text-xs text-slate-500">Daily cron runs just after 07:00 PT.</p>
+            <div className="rounded-2xl border border-white/20 bg-black/40 px-6 py-4 text-sm text-white/80 shadow">
+              <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Today</p>
+              <p className="text-lg font-semibold text-white">{today}</p>
+              <p className="mt-2 text-xs text-white/60">Daily cron runs just after 07:00 PT.</p>
             </div>
           </div>
-          <NavPills className="mt-8" />
+
+          <div className="relative z-10 flex flex-col gap-6 px-8 pb-8">
+            <NavPills />
+            {dailyPhoto ? (
+              <p className="text-xs text-white/60">
+                Photo by{" "}
+                <a
+                  className="underline decoration-white/40 underline-offset-4 hover:text-white"
+                  href={dailyPhoto.photographer_url ?? "https://www.pexels.com"}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {dailyPhoto.photographer ?? "Pexels"}
+                </a>
+              </p>
+            ) : (
+              <p className="text-xs text-white/50">Daily inspiration photo loads with the morning cron.</p>
+            )}
+          </div>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-3">
-          <article className="rounded-3xl border border-[var(--card-border)] bg-white/80 p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Primary route</p>
-            <h2 className="mt-2 text-3xl font-semibold text-slate-900">
+          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Primary route</p>
+            <h2 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
               {PRIMARY_TRIP.origin} → {PRIMARY_TRIP.destination}
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-[var(--muted)]">
               {PRIMARY_TRIP.departDate} – {PRIMARY_TRIP.returnDate} (flex ±2 days)
             </p>
             <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-xs uppercase text-slate-400">Trip length</p>
-                <p className="text-lg font-semibold text-slate-900">
+                <p className="text-xs uppercase text-[var(--muted)]">Trip length</p>
+                <p className="text-lg font-semibold text-[var(--foreground)]">
                   {PRIMARY_TRIP.tripLengthDays} days
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-400">Cabin</p>
-                <p className="text-lg font-semibold text-slate-900">{PRIMARY_TRIP.cabin}</p>
+                <p className="text-xs uppercase text-[var(--muted)]">Cabin</p>
+                <p className="text-lg font-semibold text-[var(--foreground)]">{PRIMARY_TRIP.cabin}</p>
               </div>
             </div>
           </article>
 
-          <article className="rounded-3xl border border-[var(--card-border)] bg-white/80 p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Hotel focus</p>
-            <h2 className="mt-2 text-3xl font-semibold text-slate-900">5 cities</h2>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
+          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Hotel focus</p>
+            <h2 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">5 cities</h2>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-[var(--muted)]">
               {THAI_HUB_CITIES.map((city) => (
-                <span key={city} className="rounded-full bg-[var(--accent-soft)]/50 px-3 py-1 text-[var(--accent)]">
+                <span
+                  key={city}
+                  className="rounded-full border border-[var(--card-border)] bg-[var(--accent-soft)]/30 px-3 py-1 text-[var(--accent)]"
+                >
                   {city}
                 </span>
               ))}
             </div>
           </article>
 
-          <article className="rounded-3xl border border-[var(--card-border)] bg-white/80 p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Deal triggers</p>
-            <ul className="mt-4 space-y-3 text-sm text-slate-600">
+          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Deal triggers</p>
+            <ul className="mt-4 space-y-3 text-sm text-[var(--muted)]">
               <li>↘︎ 15% drop vs 30-day average</li>
               <li>⚡ Historical low detected</li>
               <li>🪄 Manual override for key events</li>
@@ -108,26 +153,26 @@ export default async function Home() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <article className="rounded-3xl border border-[var(--card-border)] bg-white/90 p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest flight signal</p>
-            <h2 className="mt-2 text-3xl font-semibold text-slate-900">
+          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Latest flight signal</p>
+            <h2 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
               {latestFlight ? flightCurrency.format(latestFlight.price) : "--"}
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-[var(--muted)]">
               Checked {latestFlight ? formatDateTime(latestFlight.checked_at) : "n/a"}
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-xs uppercase text-slate-400">7-day median</p>
-                <p className="text-xl font-semibold text-slate-900">
+                <p className="text-xs uppercase text-[var(--muted)]">7-day median</p>
+                <p className="text-xl font-semibold text-[var(--foreground)]">
                   {flightCurrency.format(getMedianPrice(flightHistory.slice(-7)))}
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-400">Δ vs last pull</p>
+                <p className="text-xs uppercase text-[var(--muted)]">Δ vs last pull</p>
                 <p
                   className={`text-xl font-semibold ${
-                    flightDelta >= 0 ? "text-rose-600" : "text-emerald-600"
+                    flightDelta >= 0 ? "text-rose-400" : "text-emerald-400"
                   }`}
                 >
                   {flightDelta >= 0 ? "+" : "-"}
@@ -135,26 +180,31 @@ export default async function Home() {
                 </p>
               </div>
             </div>
-            <p className="mt-3 text-sm text-slate-600">
-              Carrier insights available once live data streams in.
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              Carrier insights update once live data streams in.
             </p>
           </article>
 
-          <article className="rounded-3xl border border-[var(--card-border)] bg-white/90 p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Hotel snapshot</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-900">Nightly averages</h2>
+          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Hotel snapshot</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Nightly averages</h2>
             <ul className="mt-4 space-y-3">
               {hotelSnapshots.map((sample) => (
                 <li key={sample.city} className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{sample.city}</p>
-                    <p className="text-xs text-slate-500">Daily average</p>
+                    <p className="text-sm font-medium text-[var(--foreground)]">{sample.city}</p>
+                    <p className="text-xs text-[var(--muted)]">Daily average</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-semibold text-slate-900">
+                    <p className="text-lg font-semibold text-[var(--foreground)]">
                       {formatCurrency(sample.avg_price, sample.currency)}
                     </p>
-                    <p className="text-xs text-slate-500">{new Date(sample.checked_at).toLocaleDateString("en", { month: "short", day: "numeric" })}</p>
+                    <p className="text-xs text-[var(--muted)]">
+                      {new Date(sample.checked_at).toLocaleDateString("en", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
                   </div>
                 </li>
               ))}
@@ -166,28 +216,29 @@ export default async function Home() {
           {AGENT_PIPELINES.map((pipeline) => (
             <article
               key={pipeline.title}
-              className="flex flex-col gap-4 rounded-3xl border border-[var(--card-border)] bg-white p-6 shadow-sm"
+              className="flex flex-col gap-4 rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]"
             >
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Automation</p>
-                <h3 className="text-xl font-semibold text-slate-900">{pipeline.title}</h3>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Automation</p>
+                <h3 className="text-xl font-semibold text-[var(--foreground)]">{pipeline.title}</h3>
               </div>
               <p className="text-sm font-medium text-[var(--accent)]">{pipeline.cadence}</p>
-              <p className="text-sm text-slate-600">{pipeline.summary}</p>
+              <p className="text-sm text-[var(--muted)]">{pipeline.summary}</p>
             </article>
           ))}
         </section>
 
-        <section className="rounded-3xl border border-[var(--card-border)] bg-white/90 p-6 shadow-sm">
+        <section className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Launch checklist</p>
-              <h3 className="mt-2 text-2xl font-semibold text-slate-900">MVP readiness</h3>
-              <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                These are the guardrails we keep in sight while building the upcoming phases: data model, collectors, charts, and alerts.
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--muted)]">Launch checklist</p>
+              <h3 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">MVP readiness</h3>
+              <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+                These are the guardrails we keep in sight while building the upcoming phases: data model,
+                collectors, charts, and alerts.
               </p>
             </div>
-            <div className="rounded-2xl bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--accent)]">
+            <div className="rounded-2xl bg-[var(--accent)]/15 px-4 py-3 text-sm text-[var(--accent)]">
               Scheduler: cron-friendly, single run per day.
             </div>
           </div>
@@ -195,7 +246,7 @@ export default async function Home() {
             {readinessChecklist.map((item) => (
               <li
                 key={item}
-                className="rounded-2xl border border-dashed border-[var(--card-border)] bg-white/70 px-4 py-3 text-sm text-slate-700"
+                className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--sand)]/40 px-4 py-3 text-sm text-[var(--muted)]"
               >
                 {item}
               </li>

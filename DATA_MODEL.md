@@ -36,3 +36,51 @@
 - type
 - message
 - triggered_at
+
+---
+
+## daily_photos
+- id
+- date
+- source
+- query
+- alt
+- image_url
+- image_url_large
+- image_url_thumb
+- photographer
+- photographer_url
+- avg_color
+- metadata
+
+---
+
+## experience_deals
+- id
+- title
+- city
+- category
+- price
+- currency
+- rating
+- reviews_count
+- url
+- image_url
+- summary
+- source_domain
+- scouted_date
+- confidence
+- needs_review
+- metadata
+
+---
+
+## itinerary_suggestions
+- id
+- window_start
+- window_end
+- duration_days
+- title
+- summary
+- days (json)
+- score

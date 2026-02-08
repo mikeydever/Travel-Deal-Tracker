@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { useClientReady } from "@/hooks/useClientReady";
 
 import {
   LineChart,
@@ -25,11 +26,7 @@ const formatLabel = (value: string) =>
 const currencyFormatter = (value: number) => `$${value.toFixed(0)}`;
 
 export function FlightTrendChart({ data }: FlightTrendChartProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useClientReady();
 
   if (!mounted) {
     return <div className="h-[360px]" />;
@@ -38,17 +35,17 @@ export function FlightTrendChart({ data }: FlightTrendChartProps) {
   return (
     <ResponsiveContainer width="100%" height={360}>
       <LineChart data={data} margin={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <CartesianGrid stroke="rgba(15,65,81,0.08)" strokeDasharray="3 3" />
+        <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
         <XAxis
           dataKey="checkedAt"
           tickFormatter={formatLabel}
-          stroke="#8795a1"
+          stroke="var(--muted)"
           fontSize={12}
           tickLine={false}
         />
         <YAxis
           domain={["auto", "auto"]}
-          stroke="#8795a1"
+          stroke="var(--muted)"
           fontSize={12}
           tickFormatter={currencyFormatter}
           tickLine={false}
@@ -62,14 +59,20 @@ export function FlightTrendChart({ data }: FlightTrendChartProps) {
           labelFormatter={(label: ReactNode) =>
             typeof label === "string" ? `Checked ${formatLabel(label)}` : ""
           }
-          contentStyle={{ borderRadius: 16, borderColor: "#d2d5da" }}
+          contentStyle={{
+            borderRadius: 16,
+            borderColor: "var(--card-border)",
+            backgroundColor: "var(--card)",
+            color: "var(--foreground)",
+            boxShadow: "var(--shadow-soft)",
+          }}
         />
         <Line
           type="monotone"
           dataKey="price"
-          stroke="#1f7a8c"
+          stroke="var(--chart-line)"
           strokeWidth={3}
-          dot={{ r: 3, strokeWidth: 1, stroke: "#1f7a8c" }}
+          dot={{ r: 3, strokeWidth: 1, stroke: "var(--chart-line)" }}
           activeDot={{ r: 6 }}
         />
       </LineChart>

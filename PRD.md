@@ -57,6 +57,7 @@ User tracks trips from YVR (Vancouver) to Thailand between Oct 28 – Nov 18.
 - Show latest prices
 - Historical charts
 - Deal indicators
+- Daily inspiration photo + moodboard
 
 ---
 
@@ -79,6 +80,7 @@ Display alongside price data.
 ### 6. Trip Recommendations
 - Use the festival calendar + price signals to suggest the best date windows (within Oct 28 – Nov 18).
 - Hotel searches should prioritize the recommended window when available.
+- Surface tours/attractions scouted from allowlisted sources.
 
 ---
 

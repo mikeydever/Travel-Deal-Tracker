@@ -3,19 +3,18 @@
 ## Production
 - Primary domain: https://www.yourfuture.club (root redirects to www).
 - Vercel project: `travel-deal-tracker`.
-- Daily cron enabled via `vercel.json` (schedule `0 16 * * *`, 8:00 AM PST) calling `/api/cron`.
+- Daily cron enabled via `vercel.json` for photo, flights/hotels, experiences, and itinerary agents.
 - `CRON_SECRET` is set in Vercel.
 
 ## Recent Changes
-- Added client-mount guards to avoid hydration/DOM errors:
-  - `/Users/michaelwindeyer/Desktop/Travel Deal Tracker/src/components/charts/FlightTrendChart.tsx`
-  - `/Users/michaelwindeyer/Desktop/Travel Deal Tracker/src/components/NavPills.tsx`
-- Added cron schedule config:
-  - `/Users/michaelwindeyer/Desktop/Travel Deal Tracker/vercel.json`
+- Dark-first visual refresh + theme toggle across core pages.
+- Daily Thailand photo agent + cached hero photo on `/`.
+- Experiences scout + `/experiences` page.
+- Itinerary generator + `/itinerary` page.
+- New cron scopes for `photo`, `experiences`, `itinerary`.
 
 ## Verification
-- One-time cron run executed successfully; flights updated with RapidAPI data and “Live carrier snapshot” now appears.
-- Playwright checks confirmed `/flights` and `/hotels` load on the new domain.
+- Pending: validate new cron scopes and data availability once new env vars are set.
 
 ## Notes
 - If the chart labels look sparse, check Supabase row counts for the active trip window (YVR–BKK, 2026-10-28 to 2026-11-18).

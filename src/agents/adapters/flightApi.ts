@@ -1,5 +1,5 @@
 import { env } from "@/lib/env";
-import type { FlightLegMeta, FlightMetadata, FlightQuote } from "@/types/pricing";
+import type { FlightLegMeta, FlightMetadata, FlightOffer, FlightQuote } from "@/types/pricing";
 
 interface FlightQuery {
   origin: string;
@@ -14,6 +14,13 @@ const FARE_CLASSES = ["Economy", "Economy Flex", "Economy Light"] as const;
 
 const RAPIDAPI_HOST = "flight-fare-search.p.rapidapi.com";
 const RAPIDAPI_BASE_URL = `https://${RAPIDAPI_HOST}/v2/flights/`;
+
+const isFlightApiDisabled = () => {
+  const until = env.FLIGHT_API_DISABLED_UNTIL;
+  if (!until) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return today <= until;
+};
 
 const pseudoRandom = (seed: string) => {
   let hash = 0;
@@ -64,7 +71,29 @@ const buildQuote = (query: FlightQuery, carrierIndex: number): FlightQuote => {
 export const fetchMockFlightQuotes = async (query: FlightQuery): Promise<FlightQuote[]> => {
   await new Promise((resolve) => setTimeout(resolve, 50));
   const quotes: FlightQuote[] = Array.from({ length: 4 }, (_, index) => buildQuote(query, index));
-  return quotes.sort((a, b) => a.price - b.price);
+  const sorted = quotes.sort((a, b) => a.price - b.price);
+  const toOffer = (quote: FlightQuote): FlightOffer => ({
+    carrier: quote.carrier,
+    fareClass: quote.fareClass,
+    price: quote.price,
+    currency: quote.currency,
+    durationHours: quote.durationHours,
+    stops: quote.stops,
+    combinedStops: quote.stops,
+    combinedDurationMinutes: Math.round(quote.durationHours * 60),
+  });
+  const topOverall = sorted.slice(0, 3).map(toOffer);
+  const topDirect = sorted.filter((quote) => quote.stops === 0).slice(0, 3).map(toOffer);
+  if (sorted[0]) {
+    sorted[0].metadata = {
+      ...(sorted[0].metadata ?? {}),
+      offers: {
+        topOverall,
+        topDirect,
+      },
+    };
+  }
+  return sorted;
 };
 
 interface RapidApiResult {
@@ -144,6 +173,91 @@ const buildLegMeta = (result: RapidApiResult | null, currencyFallback: string): 
   };
 };
 
+const buildOffer = (
+  outboundMeta: FlightLegMeta,
+  returnMeta: FlightLegMeta,
+  currencyFallback: string
+): FlightOffer => {
+  const outboundPrice = outboundMeta.price ?? 0;
+  const returnPrice = returnMeta.price ?? 0;
+  const totalPrice = outboundPrice + returnPrice;
+  const outboundStops = outboundMeta.stops ?? 0;
+  const returnStops = returnMeta.stops ?? 0;
+  const outboundDuration = outboundMeta.durationMinutes ?? 0;
+  const returnDuration = returnMeta.durationMinutes ?? 0;
+  const carriers = [outboundMeta.carrierName, returnMeta.carrierName].filter(Boolean) as string[];
+  const uniqueCarriers = Array.from(new Set(carriers));
+  const combinedStops = outboundStops + returnStops;
+  const combinedDurationMinutes = outboundDuration + returnDuration;
+
+  return {
+    carrier: uniqueCarriers.join(" + ") || outboundMeta.carrierCode || "Carrier TBD",
+    fareClass: outboundMeta.fareClass ?? "Economy",
+    price: Math.round(totalPrice * 100) / 100,
+    currency: outboundMeta.currency ?? currencyFallback,
+    durationHours: Math.round((combinedDurationMinutes / 60) * 10) / 10,
+    stops: combinedStops,
+    outbound: outboundMeta,
+    returnLeg: returnMeta,
+    combinedStops,
+    combinedDurationMinutes,
+  };
+};
+
+const buildOfferList = (
+  outboundResults: RapidApiResult[] = [],
+  returnResults: RapidApiResult[] = [],
+  currency: string
+) => {
+  const toLegMeta = (results: RapidApiResult[]) =>
+    results
+      .map((result) => buildLegMeta(result, currency))
+      .filter((meta): meta is FlightLegMeta => Boolean(meta?.price));
+
+  const outboundOptions = toLegMeta(outboundResults).sort(
+    (a, b) => (a.price ?? 0) - (b.price ?? 0)
+  );
+  const returnOptions = toLegMeta(returnResults).sort(
+    (a, b) => (a.price ?? 0) - (b.price ?? 0)
+  );
+
+  const outboundTop = outboundOptions.slice(0, 5);
+  const returnTop = returnOptions.slice(0, 5);
+
+  const offers: FlightOffer[] = [];
+  for (const outboundMeta of outboundTop) {
+    for (const returnMeta of returnTop) {
+      const offer = buildOffer(outboundMeta, returnMeta, currency);
+      if (offer.price > 0) {
+        offers.push(offer);
+      }
+    }
+  }
+
+  const sorted = offers.sort((a, b) => a.price - b.price);
+  const topOverall = sorted.slice(0, 3);
+  const topDirect = sorted.filter((offer) => offer.stops === 0).slice(0, 3);
+
+  return { topOverall, topDirect };
+};
+
+const quoteFromOffer = (offer: FlightOffer, offers: FlightMetadata["offers"]): FlightQuote => ({
+  carrier: offer.carrier,
+  fareClass: offer.fareClass,
+  price: offer.price,
+  currency: offer.currency,
+  durationHours: offer.durationHours ?? 0,
+  stops: offer.stops,
+  metadata: {
+    source: "rapidapi",
+    outbound: offer.outbound,
+    returnLeg: offer.returnLeg,
+    combinedStops: offer.combinedStops,
+    combinedDurationMinutes: offer.combinedDurationMinutes,
+    offers,
+  },
+});
+
 const buildRoundTripQuote = (
   outbound: RapidApiResult | null,
   returnLeg: RapidApiResult | null,
@@ -218,16 +332,25 @@ export const fetchRapidApiRoundTripQuotes = async (query: FlightQuery): Promise<
 
   const outbound = selectCheapest(outboundResponse.results ?? []);
   const returnLeg = selectCheapest(returnResponse.results ?? []);
-  const quote = buildRoundTripQuote(outbound, returnLeg, currency);
+  const offers = buildOfferList(outboundResponse.results ?? [], returnResponse.results ?? [], currency);
+  const cheapestOffer = offers.topOverall[0];
 
+  if (cheapestOffer) {
+    return [quoteFromOffer(cheapestOffer, offers)];
+  }
+
+  const quote = buildRoundTripQuote(outbound, returnLeg, currency);
   return quote ? [quote] : [];
 };
 
 export const fetchFlightQuotes = async (query: FlightQuery): Promise<FlightQuote[]> => {
   try {
-    if (env.FLIGHT_API_KEY) {
+    if (env.FLIGHT_API_KEY && !isFlightApiDisabled()) {
       const live = await fetchRapidApiRoundTripQuotes(query);
       if (live.length) return live;
+    }
+    if (env.FLIGHT_API_KEY && isFlightApiDisabled()) {
+      console.warn("[flightApi] live API disabled; using mock data");
     }
   } catch (error) {
     console.warn("[flightApi] falling back to mock data", error);

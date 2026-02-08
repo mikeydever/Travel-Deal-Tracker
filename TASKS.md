@@ -20,6 +20,9 @@
 - Latest prices view
 - Historical charts
 - Mobile layout
+- Daily photo hero
+- Experiences view
+- Itinerary view
 
 ---
 
@@ -27,6 +30,7 @@
 - Deal detection logic
 - Email alerts
 - Alert log page
+- Experiences scout + itinerary generator
 
 ---
 

@@ -44,6 +44,21 @@ export const AGENT_PIPELINES = [
     summary: "Captures the rolling average nightly rates for each Thai hub city.",
   },
   {
+    title: "Photo Agent",
+    cadence: "Daily • 06:55 PT",
+    summary: "Caches the daily Thailand inspiration photo for the homepage hero.",
+  },
+  {
+    title: "Experiences Scout",
+    cadence: "Daily • 07:15 PT",
+    summary: "Scours trusted sources for tours and attractions, then logs highlights.",
+  },
+  {
+    title: "Itinerary Agent",
+    cadence: "Daily • 07:20 PT",
+    summary: "Generates short-form itineraries aligned with price signals and deals.",
+  },
+  {
     title: "Events Agent",
     cadence: "Bi-weekly",
     summary: "Keeps the Thai festival calendar fresh so we can flag demand spikes early.",

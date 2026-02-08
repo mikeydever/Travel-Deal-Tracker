@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { NavPills } from "@/components/NavPills";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { FlightTrendChart } from "@/components/charts/FlightTrendChart";
 import { PRIMARY_TRIP } from "@/config/travel";
 import { getLatestFlightSample, getRecentFlightPrices } from "@/data/flightPrices";
@@ -28,85 +30,115 @@ export default async function FlightsPage() {
   const carrierSnapshot = latest?.metadata;
   const outboundLeg = carrierSnapshot?.outbound;
   const returnLeg = carrierSnapshot?.returnLeg;
+  const offers = carrierSnapshot?.offers;
+  const topOverall = offers?.topOverall ?? [];
+  const minOffer = topOverall.length ? Math.min(...topOverall.map((offer) => offer.price)) : null;
+  const maxOffer = topOverall.length ? Math.max(...topOverall.map((offer) => offer.price)) : null;
+  const rangeLabel =
+    minOffer && maxOffer ? `${currency.format(minOffer)} – ${currency.format(maxOffer)}` : "--";
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 sm:px-6 lg:px-8">
-      <section className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-8 shadow-[var(--glow)] backdrop-blur">
+      <section className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-8 shadow-[var(--glow)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Flights</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">YVR → BKK fare history</h1>
-            <p className="mt-3 max-w-2xl text-base text-slate-600">
+            <p className="text-sm uppercase tracking-[0.35em] text-[var(--muted)]">Flights</p>
+            <h1 className="mt-2 text-3xl font-semibold text-[var(--foreground)] sm:text-4xl font-[var(--font-display)]">
+              YVR → BKK fare history
+            </h1>
+            <p className="mt-3 max-w-2xl text-base text-[var(--muted)]">
               Daily snapshot of the cheapest round-trip economy fare for the Thailand window ({" "}
               {PRIMARY_TRIP.departDate} – {PRIMARY_TRIP.returnDate}).
             </p>
           </div>
-          <div className="rounded-2xl border border-[var(--card-border)] bg-white/80 px-6 py-4 text-sm text-slate-600 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest fare</p>
-            <p className="text-3xl font-semibold text-slate-900">
-              {latest ? currency.format(latest.price) : "--"}
-            </p>
-            {latest && (
-              <p className="mt-2 text-xs text-slate-500">Checked {formatDateTime(latest.checked_at)}</p>
-            )}
+          <div className="flex flex-col items-start gap-3">
+            <ThemeToggle />
+            <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--sand)]/40 px-6 py-4 text-sm text-[var(--muted)]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Latest fare</p>
+              <p className="text-3xl font-semibold text-[var(--foreground)]">
+                {latest ? currency.format(latest.price) : "--"}
+              </p>
+              {latest && (
+                <p className="mt-2 text-xs text-[var(--muted)]">Checked {formatDateTime(latest.checked_at)}</p>
+              )}
+            </div>
           </div>
         </div>
         <NavPills className="mt-8" />
       </section>
 
-      <section className="rounded-3xl border border-[var(--card-border)] bg-white/90 p-6 shadow">
+      <section className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-500">Trend</p>
-            <h2 className="text-2xl font-semibold text-slate-900">30-day flight price curve</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[var(--muted)]">Trend</p>
+            <h2 className="text-2xl font-semibold text-[var(--foreground)]">
+              30-day flight price curve
+            </h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
               Comparison vs. previous run shows {priceDelta >= 0 ? "a bump of" : "a drop of"}{" "}
               {currency.format(Math.abs(priceDelta))} ({deltaPercentage.toFixed(1)}%).
             </p>
           </div>
-          <div className={`rounded-full px-4 py-2 text-sm font-medium ${
-            priceDelta >= 0
-              ? "bg-rose-50 text-rose-700"
-              : "bg-emerald-50 text-emerald-700"
-          }`}>
+          <div
+            className={`rounded-full px-4 py-2 text-sm font-medium ${
+              priceDelta >= 0
+                ? "bg-rose-500/15 text-rose-300"
+                : "bg-emerald-500/15 text-emerald-300"
+            }`}
+          >
             {priceDelta >= 0 ? "Slightly higher today" : "Cheaper than yesterday"}
           </div>
         </div>
-        <div className="mt-6 rounded-2xl bg-slate-50/70 p-4">
+        <div className="mt-6 rounded-2xl bg-[var(--sand)]/50 p-4">
           <FlightTrendChart data={chartData} />
         </div>
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        <article className="rounded-3xl border border-dashed border-[var(--card-border)] bg-white/80 p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Benchmark</p>
-          <h3 className="mt-2 text-lg font-semibold text-slate-900">Median (last 7 days)</h3>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">
+      <section className="grid gap-6 md:grid-cols-3">
+        <Link
+          href="/flights/offers"
+          className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-1 hover:shadow-[var(--glow)]"
+        >
+          <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Fare range</p>
+          <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+            Top 3 overall
+          </h3>
+          <p className="mt-2 text-3xl font-semibold text-[var(--foreground)]">{rangeLabel}</p>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            Click to view the top 3 overall + top 3 direct fares.
+          </p>
+        </Link>
+        <article className="rounded-3xl border border-dashed border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+          <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Benchmark</p>
+          <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">Median (last 7 days)</h3>
+          <p className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
             {history.length ? currency.format(getMedianPrice(history.slice(-7))) : "--"}
           </p>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-[var(--muted)]">
             We use the 7-day median as our quick sanity check for alert thresholds.
           </p>
         </article>
-        <article className="rounded-3xl border border-dashed border-[var(--card-border)] bg-white/80 p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Carrier note</p>
-          <h3 className="mt-2 text-lg font-semibold text-slate-900">
-            {outboundLeg?.carrierName || outboundLeg?.carrierCode ? "Live carrier snapshot" : "Awaiting live carrier data"}
+        <article className="rounded-3xl border border-dashed border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+          <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Carrier note</p>
+          <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+            {outboundLeg?.carrierName || outboundLeg?.carrierCode
+              ? "Live carrier snapshot"
+              : "Awaiting live carrier data"}
           </h3>
           {outboundLeg?.carrierName || outboundLeg?.carrierCode ? (
-            <div className="mt-2 text-sm text-slate-600">
+            <div className="mt-2 text-sm text-[var(--muted)]">
               <p>{formatLeg("Outbound", outboundLeg)}</p>
               {returnLeg && <p className="mt-1">{formatLeg("Return", returnLeg)}</p>}
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-[var(--muted)]">
                 Source: {carrierSnapshot?.source === "rapidapi" ? "RapidAPI flight fare search" : "Live feed"}
               </p>
             </div>
           ) : (
             <>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 text-sm text-[var(--muted)]">
                 Once the flight API is wired up, we’ll capture fare class, stops, and duration metadata here.
               </p>
-              <p className="mt-1 text-xs text-slate-500">Current mock adapter focuses on pricing only.</p>
+              <p className="mt-1 text-xs text-[var(--muted)]">Current mock adapter focuses on pricing only.</p>
             </>
           )}
         </article>

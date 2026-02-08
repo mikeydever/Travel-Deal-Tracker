@@ -1,14 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f1eb;
-  --foreground: #0e1b2c;
-  --accent: #1f7a8c;
-  --accent-soft: #b4e4f5;
-  --sand: #faf7f2;
-  --card: rgba(255, 255, 255, 0.9);
-  --card-border: #ded6c4;
-  --glow: 0 20px 50px rgba(15, 65, 81, 0.15);
+  --background: #f6f1e7;
+  --foreground: #151f2e;
+  --muted: #5b6a7c;
+  --accent: #c78d2b;
+  --accent-soft: #f1ddbb;
+  --sand: #fbf7f1;
+  --card: rgba(255, 255, 255, 0.86);
+  --card-border: rgba(174, 155, 128, 0.35);
+  --glow: 0 20px 60px rgba(20, 32, 54, 0.18);
+  --shadow-soft: 0 12px 30px rgba(20, 32, 54, 0.12);
+  --chart-line: #1f7a8c;
+  --chart-grid: rgba(15, 30, 48, 0.12);
+  --chart-fill: rgba(31, 122, 140, 0.18);
+  --page-gradient: radial-gradient(circle at 15% 10%, #ffffff 0%, #f6f1e7 45%, #ece4d8 100%);
+  --page-edge: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent 40%, transparent 60%, rgba(255, 255, 255, 0.6));
+  --focus-ring: rgba(199, 141, 43, 0.35);
+}
+
+[data-theme="dark"] {
+  --background: #0b0f16;
+  --foreground: #e7ecf5;
+  --muted: #a2b1c6;
+  --accent: #f5c25b;
+  --accent-soft: #2b4c4c;
+  --sand: #101826;
+  --card: rgba(17, 23, 35, 0.82);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --glow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.35);
+  --chart-line: #5ec7c2;
+  --chart-grid: rgba(160, 188, 220, 0.12);
+  --chart-fill: rgba(94, 199, 194, 0.2);
+  --page-gradient: radial-gradient(circle at 20% 12%, #1a2636 0%, #0b0f16 50%, #070a11 100%);
+  --page-edge: linear-gradient(90deg, rgba(11, 18, 32, 0.8), transparent 40%, transparent 60%, rgba(11, 18, 32, 0.65));
+  --focus-ring: rgba(245, 194, 91, 0.4);
 }
 
 @theme inline {
@@ -24,7 +51,7 @@
 body {
   min-height: 100vh;
   margin: 0;
-  background: radial-gradient(circle at top, #ffffff, var(--background));
+  background: var(--page-gradient);
   color: var(--foreground);
   font-family: var(--font-geist-sans), "SF Pro Display", "Segoe UI", system-ui;
   line-height: 1.6;
@@ -37,4 +64,37 @@ body {
 ::selection {
   background: var(--accent);
   color: white;
+}
+
+.page-shell {
+  position: relative;
+  min-height: 100vh;
+  background: transparent;
+}
+
+.page-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--page-edge);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: -10;
+}
+
+.page-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle at 80% 15%, rgba(199, 141, 43, 0.16), transparent 45%);
+  mix-blend-mode: screen;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: -11;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
 }

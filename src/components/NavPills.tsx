@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useClientReady } from "@/hooks/useClientReady";
 
 const NAV_LINKS = [
   { label: "Overview", href: "/" },
   { label: "Flights", href: "/flights" },
   { label: "Hotels", href: "/hotels" },
+  { label: "Experiences", href: "/experiences" },
+  { label: "Itinerary", href: "/itinerary" },
 ];
 
 interface NavPillsProps {
@@ -15,15 +17,11 @@ interface NavPillsProps {
 }
 
 const baseClass =
-  "inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]";
+  "inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]";
 
 export function NavPills({ className = "" }: NavPillsProps) {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useClientReady();
 
   return (
     <nav className={`flex flex-wrap gap-3 ${className}`}>
@@ -36,8 +34,8 @@ export function NavPills({ className = "" }: NavPillsProps) {
             aria-current={isActive ? "page" : undefined}
             className={`${baseClass} ${
               isActive
-                ? "border-transparent bg-[var(--accent)] text-white shadow"
-                : "border-[var(--card-border)] text-slate-600 hover:text-slate-900"
+                ? "border-transparent bg-[var(--accent)] text-black shadow-[var(--shadow-soft)]"
+                : "border-[var(--card-border)] text-[var(--muted)] hover:text-[var(--foreground)]"
             }`}
           >
             {link.label}

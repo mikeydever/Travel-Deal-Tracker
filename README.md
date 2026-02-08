@@ -41,6 +41,9 @@ Keep these files up to date as we implement later phases.
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` – anonymous key for client access
    - `SUPABASE_SERVICE_ROLE_KEY` – optional, only for server jobs
    - `FLIGHT_API_KEY` / `HOTEL_API_KEY` – connectors used by data agents
+   - `PEXELS_API_KEY` – daily Thailand photo source
+   - `BRAVE_SEARCH_API_KEY` – web scouting search API
+   - `OPENAI_API_KEY` – deal extraction + itinerary narration
    - `CRON_SECRET` – shared secret used by the scheduled cron endpoint
 3. Run the development server
    ```bash
@@ -94,6 +97,8 @@ Keep these files up to date as we implement later phases.
 - `/` Overview: trip summary, latest flight + hotel signals, automation checklist.
 - `/flights`: 30-day fare chart (Recharts) + benchmark stats.
 - `/hotels`: city snapshots and micro area charts for each Thai hub.
+- `/experiences`: daily scout of tours + attractions (allowlist only).
+- `/itinerary`: suggested travel windows + 3/5/7/10-day itineraries.
 
 All pages are built with responsive Tailwind layouts so they stay readable on mobile.
 

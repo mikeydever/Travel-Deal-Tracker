@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -10,6 +10,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const displayFont = Cormorant_Garamond({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -26,12 +32,24 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)] text-[var(--foreground)]`}
+        className={`${geistSans.variable} ${geistMono.variable} ${displayFont.variable} antialiased bg-[var(--background)] text-[var(--foreground)]`}
       >
-        <div className="min-h-screen bg-slate-50/60">
-          <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(31,122,140,0.1),_transparent)]" />
-          <div className="pointer-events-none fixed inset-y-0 left-0 -z-10 w-40 bg-gradient-to-r from-white/70 to-transparent" />
-          <div className="pointer-events-none fixed inset-y-0 right-0 -z-10 w-40 bg-gradient-to-l from-white/70 to-transparent" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(() => {
+  try {
+    const stored = localStorage.getItem("tdd-theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme = stored || (prefersDark ? "dark" : "light");
+    document.documentElement.dataset.theme = theme;
+  } catch (e) {}
+})();`,
+          }}
+        />
+        <div className="page-shell">
+          <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_80%_20%,_rgba(245,194,91,0.12),_transparent_55%)]" />
+          <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-64 bg-gradient-to-b from-[rgba(255,255,255,0.6)] to-transparent" />
           <div className="relative">{children}</div>
         </div>
       </body>
