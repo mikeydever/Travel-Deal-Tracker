@@ -18,6 +18,11 @@ const formatWindow = (start: string, end: string) => {
   return `${format(start)} – ${format(end)}`;
 };
 
+const formatDayStamp = (iso?: string) => {
+  if (!iso) return null;
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en", { month: "short", day: "numeric" });
+};
+
 export default async function ItineraryPage({
   searchParams,
 }: {
@@ -133,9 +138,16 @@ export default async function ItineraryPage({
           >
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">Day {day.day}</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
+                  Day {day.day}
+                  {day.date ? ` · ${formatDayStamp(day.date)}` : ""}
+                  {day.city ? ` · ${day.city}` : ""}
+                </p>
                 {day.title ? (
                   <h3 className="mt-2 text-xl font-semibold text-[var(--foreground)]">{day.title}</h3>
+                ) : null}
+                {day.travelFrom ? (
+                  <p className="mt-1 text-xs text-[var(--muted)]">Travel day: {day.travelFrom} to {day.city ?? "next stop"}</p>
                 ) : null}
               </div>
             </div>

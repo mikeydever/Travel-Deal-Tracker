@@ -1,5 +1,8 @@
 export interface ItineraryDay {
   day: number;
+  date?: string;
+  city?: string;
+  travelFrom?: string;
   title?: string;
   morning: string;
   afternoon: string;
