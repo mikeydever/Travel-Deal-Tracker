@@ -14,7 +14,8 @@ export interface ItineraryAgentResult {
   windows: number;
 }
 
-const DURATIONS_BASE = [3, 5, 7, 10, 14];
+const PTO_FRIENDLY_DURATION = Math.max(3, PRIMARY_TRIP.tripLengthDays - 3);
+const DURATIONS_BASE = [3, 5, 7, 10, 14, PTO_FRIENDLY_DURATION];
 const DURATIONS = Array.from(new Set([...DURATIONS_BASE, PRIMARY_TRIP.tripLengthDays])).sort(
   (a, b) => a - b
 );
@@ -51,7 +52,7 @@ const chooseCityCount = (duration: number) => {
   return 4;
 };
 
-const pickCityOrder = (deals: DealSeed[], duration: number) => {
+const pickCityRoute = (deals: DealSeed[], duration: number) => {
   const counts = new Map<string, number>();
   for (const deal of deals) {
     if (!deal.city) continue;
@@ -60,20 +61,74 @@ const pickCityOrder = (deals: DealSeed[], duration: number) => {
 
   const desired = Math.min(chooseCityCount(duration), THAI_HUB_CITIES.length);
   const startCity = "Bangkok";
+  const endCity = "Bangkok";
 
   const ranked = [...THAI_HUB_CITIES]
     .filter((city) => city !== startCity)
     .sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0));
 
-  const order = [startCity, ...ranked].slice(0, desired);
-  return order.length ? order : [startCity];
+  if (duration <= 5) {
+    return [startCity];
+  }
+
+  const middleCount = Math.max(1, desired - 1);
+  const middle = ranked.slice(0, middleCount);
+  return [startCity, ...middle, endCity];
 };
 
-const allocateSegmentDays = (duration: number, cities: string[]) => {
-  const segments = Math.max(1, Math.min(cities.length, duration));
-  const base = Math.floor(duration / segments);
-  const remainder = duration % segments;
-  return Array.from({ length: segments }).map((_, index) => base + (index < remainder ? 1 : 0));
+const allocateSegmentDays = (duration: number, route: string[]) => {
+  if (route.length <= 1) return [duration];
+
+  const segments = Math.min(route.length, duration);
+  if (segments <= 1) return [duration];
+
+  const startIndex = 0;
+  const endIndex = segments - 1;
+  const middleSegments = Math.max(0, segments - 2);
+
+  let startDays = duration >= 14 ? 4 : duration >= 10 ? 3 : 2;
+  let endDays = duration >= 14 ? 3 : duration >= 10 ? 2 : 1;
+
+  // Ensure we can allocate at least 1 day per middle segment.
+  const minRequired = startDays + endDays + middleSegments;
+  if (minRequired > duration) {
+    const overflow = minRequired - duration;
+    const trimStart = Math.min(startDays - 1, Math.ceil(overflow / 2));
+    startDays -= trimStart;
+    endDays = Math.max(1, endDays - (overflow - trimStart));
+  }
+
+  let remaining = duration - startDays - endDays;
+  if (middleSegments === 0) {
+    return [duration];
+  }
+
+  if (remaining < middleSegments) {
+    // Last resort: shrink start/end to make room.
+    while (remaining < middleSegments && startDays > 1) {
+      startDays -= 1;
+      remaining += 1;
+    }
+    while (remaining < middleSegments && endDays > 1) {
+      endDays -= 1;
+      remaining += 1;
+    }
+  }
+
+  const base = Math.floor(remaining / middleSegments);
+  const remainder = remaining % middleSegments;
+  const middle = Array.from({ length: middleSegments }).map(
+    (_, index) => base + (index < remainder ? 1 : 0)
+  );
+
+  const segmentDays = Array(segments).fill(0);
+  segmentDays[startIndex] = startDays;
+  segmentDays[endIndex] = endDays;
+  for (let i = 0; i < middleSegments; i += 1) {
+    segmentDays[i + 1] = middle[i] ?? 1;
+  }
+
+  return segmentDays;
 };
 
 const formatDealPrice = (deal?: DealSeed) => {
@@ -265,21 +320,21 @@ const buildDaySeeds = (
     byCity.set(city, list);
   }
 
-  const orderedCities = pickCityOrder(deals, duration);
-  const segmentDays = allocateSegmentDays(duration, orderedCities);
+  const route = pickCityRoute(deals, duration);
+  const segmentDays = allocateSegmentDays(duration, route);
 
   const seeds: DaySeed[] = [];
   let globalIndex = 0;
 
-  for (let cityIndex = 0; cityIndex < orderedCities.length; cityIndex += 1) {
-    const city = orderedCities[cityIndex] ?? "Bangkok";
-    const daysHere = segmentDays[cityIndex] ?? 0;
+  for (let segmentIndex = 0; segmentIndex < route.length; segmentIndex += 1) {
+    const city = route[segmentIndex] ?? "Bangkok";
+    const daysHere = segmentDays[segmentIndex] ?? 0;
     const queue = byCity.get(city) ?? [];
-    const prevCity = cityIndex > 0 ? orderedCities[cityIndex - 1] : undefined;
+    const prevCity = segmentIndex > 0 ? route[segmentIndex - 1] : undefined;
 
     for (let localDay = 0; localDay < daysHere; localDay += 1) {
       const deal = queue.shift();
-      const travelFrom = localDay === 0 ? prevCity : undefined;
+      const travelFrom = localDay === 0 && prevCity && prevCity !== city ? prevCity : undefined;
       seeds.push({
         day: globalIndex + 1,
         date: addDaysIso(windowStart, globalIndex),

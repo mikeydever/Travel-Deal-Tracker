@@ -4,12 +4,11 @@ import { getItinerarySuggestions } from "@/data/itineraries";
 
 export const dynamic = "force-dynamic";
 
-const makeWindowKey = (row: { window_start: string; window_end: string }) =>
-  `${row.window_start}_${row.window_end}`;
-
-const parseWindowKey = (key: string) => {
-  const [start, end] = key.split("_");
-  return { start, end };
+const addDaysIso = (value: string, days: number) => {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 };
 
 const formatWindow = (start: string, end: string) => {
@@ -32,19 +31,13 @@ export default async function ItineraryPage({
   const takeFirst = (value?: string | string[]) =>
     Array.isArray(value) ? value[0] : value;
   const suggestions = await getItinerarySuggestions();
-  const windows = Array.from(
-    new Map(
-      suggestions.map((row) => [makeWindowKey(row), row])
-    ).values()
-  );
+  const starts = Array.from(new Set(suggestions.map((row) => row.window_start)));
 
-  const selectedWindowKey = takeFirst(resolvedParams?.window) ?? makeWindowKey(windows[0]);
+  const selectedStart = takeFirst(resolvedParams?.window) ?? starts[0];
   const durationFromQuery = Number(takeFirst(resolvedParams?.duration) ?? "");
 
-  const availableForWindow = suggestions.filter(
-    (row) => makeWindowKey(row) === selectedWindowKey
-  );
-  const durations = Array.from(new Set(availableForWindow.map((row) => row.duration_days))).sort(
+  const availableForStart = suggestions.filter((row) => row.window_start === selectedStart);
+  const durations = Array.from(new Set(availableForStart.map((row) => row.duration_days))).sort(
     (a, b) => a - b
   );
   const selectedDuration = durations.includes(durationFromQuery)
@@ -52,10 +45,8 @@ export default async function ItineraryPage({
     : durations[0];
 
   const itinerary =
-    availableForWindow.find((row) => row.duration_days === selectedDuration) ??
-    availableForWindow[0];
-
-  const windowParams = parseWindowKey(selectedWindowKey);
+    availableForStart.find((row) => row.duration_days === selectedDuration) ??
+    availableForStart[0];
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-16 pt-10 sm:px-6 lg:px-8">
@@ -90,24 +81,26 @@ export default async function ItineraryPage({
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--muted)]">Windows</p>
             <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
-              {formatWindow(windowParams.start, windowParams.end)}
+              {itinerary ? formatWindow(itinerary.window_start, itinerary.window_end) : ""}
             </h2>
             <p className="mt-1 text-sm text-[var(--muted)]">{itinerary?.summary ?? ""}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {windows.map((window) => {
-              const key = makeWindowKey(window);
+            {starts.map((start) => {
+              const end =
+                suggestions.find((row) => row.window_start === start && row.duration_days === selectedDuration)
+                  ?.window_end ?? addDaysIso(start, Math.max(0, selectedDuration - 1));
               return (
                 <a
-                  key={key}
-                  href={`/itinerary?window=${key}&duration=${selectedDuration}`}
+                  key={start}
+                  href={`/itinerary?window=${start}&duration=${selectedDuration}`}
                   className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] ${
-                    key === selectedWindowKey
+                    start === selectedStart
                       ? "border-transparent bg-[var(--accent)] text-black"
                       : "border-[var(--card-border)] text-[var(--muted)]"
                   }`}
                 >
-                  {formatWindow(window.window_start, window.window_end)}
+                  {formatWindow(start, end)}
                 </a>
               );
             })}
@@ -117,7 +110,7 @@ export default async function ItineraryPage({
           {durations.map((duration) => (
             <a
               key={duration}
-              href={`/itinerary?window=${selectedWindowKey}&duration=${duration}`}
+              href={`/itinerary?window=${selectedStart}&duration=${duration}`}
               className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] ${
                 duration === selectedDuration
                   ? "border-transparent bg-[var(--accent)] text-black"
