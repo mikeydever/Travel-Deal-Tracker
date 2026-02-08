@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const NAV_LINKS = [
   { label: "Overview", href: "/" },
@@ -18,11 +19,16 @@ const baseClass =
 
 export function NavPills({ className = "" }: NavPillsProps) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <nav className={`flex flex-wrap gap-3 ${className}`}>
       {NAV_LINKS.map((link) => {
-        const isActive = pathname === link.href;
+        const isActive = mounted && pathname === link.href;
         return (
           <Link
             key={link.href}

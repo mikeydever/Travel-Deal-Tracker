@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import {
   LineChart,
@@ -25,6 +25,16 @@ const formatLabel = (value: string) =>
 const currencyFormatter = (value: number) => `$${value.toFixed(0)}`;
 
 export function FlightTrendChart({ data }: FlightTrendChartProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="h-[360px]" />;
+  }
+
   return (
     <ResponsiveContainer width="100%" height={360}>
       <LineChart data={data} margin={{ top: 10, bottom: 10, left: 10, right: 10 }}>
