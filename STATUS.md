@@ -16,10 +16,13 @@
 - Added `/flights/offers` for top-3 overall + top-3 direct fare details.
 - Experiences page now supports saved items (local storage) and filters that honor URL params.
 - Experiences scout now prefers Viator API (bookable deals with price + rating) when `VIATOR_API_KEY` is set.
-- Itinerary agent now seeds days from bookable experiences, stays in city blocks (starts/ends in Bangkok), and supports a PTO-friendly duration.
+- Itinerary agent now seeds days from bookable experiences, stays in city blocks (starts/ends in Bangkok), and supports PTO-friendly durations.
+- In-country itineraries now end on `PRIMARY_TRIP.returnDate - 1` (for 2026-10-28 → 2026-11-17), so you can treat `PRIMARY_TRIP.returnDate` as the flight-home day.
+- Long itineraries are generated deterministically (AI only used for short trips) to avoid repetitive day text.
 
 ## Verification
-- Pending: validate new cron scopes and data availability once new env vars are set.
+- Pending: validate itinerary UX for the 21-day PTO plan (Oct 28 → Nov 17) after regenerating suggestions.
 
 ## Notes
 - If the chart labels look sparse, check Supabase row counts for the active trip window (YVR–BKK, 2026-10-28 to 2026-11-18).
+- PTO reference: off work 2026-10-28 through 2026-11-17, back to work 2026-11-18.

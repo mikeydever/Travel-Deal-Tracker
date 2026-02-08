@@ -14,8 +14,10 @@ export interface ItineraryAgentResult {
   windows: number;
 }
 
-const PTO_FRIENDLY_DURATION = Math.max(3, PRIMARY_TRIP.tripLengthDays - 3);
-const DURATIONS_BASE = [3, 5, 7, 10, 14, PTO_FRIENDLY_DURATION];
+// PTO typically ends the day before you're back at work. Keep this configurable via PRIMARY_TRIP.
+const PTO_FRIENDLY_DURATION = Math.max(3, PRIMARY_TRIP.tripLengthDays - 1);
+const WEEKEND_BUFFER_DURATION = Math.max(3, PRIMARY_TRIP.tripLengthDays - 3);
+const DURATIONS_BASE = [3, 5, 7, 10, 14, WEEKEND_BUFFER_DURATION, PTO_FRIENDLY_DURATION];
 const DURATIONS = Array.from(new Set([...DURATIONS_BASE, PRIMARY_TRIP.tripLengthDays])).sort(
   (a, b) => a - b
 );
@@ -24,6 +26,7 @@ interface DealSeed {
   id: string;
   title: string;
   city?: string | null;
+  category?: string | null;
   price?: number | null;
   currency?: string | null;
   rating?: number | null;
@@ -45,10 +48,31 @@ const addDaysIso = (value: string, days: number) => {
   return date.toISOString().slice(0, 10);
 };
 
+const daysBetweenInclusive = (start: string, end: string) => {
+  const startDate = new Date(`${start}T00:00:00Z`).getTime();
+  const endDate = new Date(`${end}T00:00:00Z`).getTime();
+  return Math.max(0, Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
+};
+
+const hashString = (value: string) => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+};
+
+const pickFrom = (items: string[], seed: string) => {
+  if (items.length === 0) return "";
+  const index = hashString(seed) % items.length;
+  return items[index] ?? items[0] ?? "";
+};
+
 const chooseCityCount = (duration: number) => {
   if (duration <= 5) return 1;
   if (duration <= 9) return 2;
-  if (duration <= 21) return 3;
+  if (duration <= 16) return 3;
   return 4;
 };
 
@@ -59,7 +83,6 @@ const pickCityRoute = (deals: DealSeed[], duration: number) => {
     counts.set(deal.city, (counts.get(deal.city) ?? 0) + 1);
   }
 
-  const desired = Math.min(chooseCityCount(duration), THAI_HUB_CITIES.length);
   const startCity = "Bangkok";
   const endCity = "Bangkok";
 
@@ -71,9 +94,35 @@ const pickCityRoute = (deals: DealSeed[], duration: number) => {
     return [startCity];
   }
 
-  const middleCount = Math.max(1, desired - 1);
-  const middle = ranked.slice(0, middleCount);
-  return [startCity, ...middle, endCity];
+  // For longer trips, prefer a coherent north + beach split instead of daily city hopping.
+  const middle: string[] = [];
+  const available = new Set(ranked.filter((city) => (counts.get(city) ?? 0) > 0));
+  const addBest = (cities: string[]) => {
+    const filtered = cities.filter((city) => city !== startCity && !middle.includes(city));
+    if (filtered.length === 0) return;
+    const best = filtered.sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0))[0];
+    if (best) middle.push(best);
+  };
+
+  if (duration >= 17) {
+    if (available.has("Chiang Mai")) middle.push("Chiang Mai");
+    addBest(["Krabi", "Phuket"]);
+    if (available.has("Koh Samui")) middle.push("Koh Samui");
+  } else if (duration >= 10) {
+    if (available.has("Chiang Mai")) middle.push("Chiang Mai");
+    addBest(["Krabi", "Phuket", "Koh Samui"]);
+  } else {
+    addBest(ranked);
+  }
+
+  const desiredMiddle = Math.max(1, Math.min(chooseCityCount(duration) - 1, ranked.length));
+  while (middle.length < desiredMiddle) {
+    const next = ranked.find((city) => !middle.includes(city));
+    if (!next) break;
+    middle.push(next);
+  }
+
+  return [startCity, ...middle.slice(0, desiredMiddle), endCity];
 };
 
 const allocateSegmentDays = (duration: number, route: string[]) => {
@@ -141,25 +190,141 @@ const formatDealPrice = (deal?: DealSeed) => {
   }).format(deal.price);
 };
 
+const buildCitySegments = (seeds: DaySeed[]) => {
+  const segments: Array<{ city: string; start: string; end: string }> = [];
+  for (const seed of seeds) {
+    const last = segments[segments.length - 1];
+    if (!last || last.city !== seed.city) {
+      segments.push({ city: seed.city, start: seed.date, end: seed.date });
+    } else {
+      last.end = seed.date;
+    }
+  }
+  return segments;
+};
+
+const buildItineraryHeader = (seeds: DaySeed[], windowStart: string, windowEnd: string) => {
+  const segments = buildCitySegments(seeds);
+  const preview = segments
+    .map((segment) => {
+      const format = (value: string) =>
+        new Date(`${value}T00:00:00Z`).toLocaleDateString("en", {
+          month: "short",
+          day: "numeric",
+        });
+      return `${segment.city} (${format(segment.start)}-${format(segment.end)})`;
+    })
+    .join(" · ");
+
+  return {
+    title: `Thailand loop: ${windowStart} to ${windowEnd}`,
+    summary:
+      segments.length > 1
+        ? `City blocks with travel days baked in: ${preview}.`
+        : "Single-city rhythm with one standout experience each day.",
+  };
+};
+
+const buildDayTitle = (params: { seed: DaySeed; index: number; duration: number }) => {
+  const { seed, index, duration } = params;
+  const isFirst = seed.day === 1;
+  const isLast = seed.day === duration;
+  if (isFirst) return `Arrive in ${seed.city}`;
+  if (isLast && seed.city === "Bangkok") return "Departure prep in Bangkok";
+  if (isLast) return `Last day in ${seed.city}`;
+  if (seed.travelFrom) return `Travel to ${seed.city}`;
+
+  const themes = [
+    "Markets + street food",
+    "Temples + old town",
+    "Waterfront + neighborhoods",
+    "Nature + viewpoints",
+    "Museums + cafes",
+    "Wellness + slow afternoon",
+  ];
+  const theme = pickFrom(themes, `${seed.date}-${seed.city}-${index}`);
+  return `${seed.city}: ${theme}`;
+};
+
 const buildFallbackItinerary = (
   seeds: DaySeed[],
   events: EventRow[] = []
 ): ItineraryDay[] => {
-  const morningIdeas = [
-    "Temple circuit and a slow breakfast in the old quarter.",
-    "Local market stroll with street coffee and people-watching.",
-    "Sunrise viewpoint and a relaxed cafe start.",
-    "Neighborhood walk with a stop at a favorite bakery.",
-    "Riverside stroll and a light breakfast by the water.",
-  ];
+  const morningByCity: Record<string, string[]> = {
+    Bangkok: [
+      "Temple hop early, then breakfast near the river.",
+      "Canal-side walk and a casual cafe start.",
+      "Old town loop with a coffee stop and a slow pace.",
+      "Neighborhood wander with a bakery break.",
+      "Market breakfast and a short boat ride for orientation.",
+    ],
+    "Chiang Mai": [
+      "Old city temple circuit and a slow breakfast.",
+      "Cafe start, then a neighborhood walk inside the moat.",
+      "Early viewpoint or park walk, then a light brunch.",
+      "Local market stop and a relaxed morning in the old quarter.",
+      "Craft shopping and a short stroll through side streets.",
+    ],
+    Krabi: [
+      "Beach sunrise, then breakfast with a view.",
+      "Slow morning on the sand, then coffee and a short walk.",
+      "Viewpoint hike (easy pace), then brunch.",
+      "Market stop and a lazy morning by the water.",
+      "Cafe start, then a scenic coastal stroll.",
+    ],
+    Phuket: [
+      "Old town stroll and a cafe breakfast.",
+      "Beach morning, then a slow brunch.",
+      "Viewpoint loop, then coffee and a reset.",
+      "Neighborhood walk with a bakery stop.",
+      "Market breakfast and a relaxed start.",
+    ],
+    "Koh Samui": [
+      "Sunrise viewpoint and a relaxed cafe start.",
+      "Beach morning, then brunch and a short walk.",
+      "Slow breakfast, then a neighborhood wander.",
+      "Coffee start, then a gentle viewpoint or temple stop.",
+      "Market bite and an easy start by the water.",
+    ],
+  };
 
-  const eveningIdeas = [
-    "Night market tasting and a casual bar hop.",
-    "Riverside dinner with a sunset view.",
-    "Food crawl with a focus on local specialties.",
-    "Rooftop or riverside drinks to wrap the day.",
-    "Low-key dinner and a short stroll through the lantern-lit streets.",
-  ];
+  const eveningByCity: Record<string, string[]> = {
+    Bangkok: [
+      "Riverside dinner and a low-key night view.",
+      "Night market snack run and an early finish.",
+      "Chinatown-style food crawl with a short stroll after.",
+      "Rooftop or riverside drinks to cap the day.",
+      "Casual dinner, then a walk through a lively neighborhood.",
+    ],
+    "Chiang Mai": [
+      "Night market tasting and a relaxed walk back.",
+      "Low-key dinner and a short lantern-lit stroll.",
+      "Old town dinner, then a casual bar or dessert stop.",
+      "Street food sampling and a quiet finish.",
+      "Riverside dinner with a slow pace.",
+    ],
+    Krabi: [
+      "Seafood dinner and a sunset view.",
+      "Night market bites and a short waterfront walk.",
+      "Casual dinner, then a calm beach stroll.",
+      "Sunset drinks, then an early night.",
+      "Food crawl focused on local specialties.",
+    ],
+    Phuket: [
+      "Old town dinner and a late dessert stop.",
+      "Night market sampling and a short walk.",
+      "Sunset viewpoint, then a casual dinner.",
+      "Food crawl with a focus on local specialties.",
+      "Rooftop drinks, then a relaxed finish.",
+    ],
+    "Koh Samui": [
+      "Riverside or beach dinner with a sunset view.",
+      "Night market bites and a calm walk back.",
+      "Casual dinner, then a short beach stroll.",
+      "Food crawl focused on local specialties.",
+      "Low-key drinks and an early finish.",
+    ],
+  };
 
   return seeds.map((seed, index) => {
     const deal = seed.deal;
@@ -171,10 +336,6 @@ const buildFallbackItinerary = (
         }${rating ?? ""}${price || rating ? ")" : ""}.`
       : `Guided highlight focusing on ${seed.city}.`;
 
-    const titleBase =
-      index === 0 ? `Arrival + ${seed.city}` : `${seed.city} day ${seed.day}`;
-    const title = index === seeds.length - 1 ? `Last look at ${seed.city}` : titleBase;
-
     const matchingEvent = events.find((event) => {
       const location = (event.location ?? "").toLowerCase();
       const city = seed.city.toLowerCase();
@@ -184,18 +345,20 @@ const buildFallbackItinerary = (
 
     const morning = seed.travelFrom
       ? `Travel from ${seed.travelFrom} to ${seed.city}, check in, and reset with a coffee.`
-      : morningIdeas[index % morningIdeas.length];
+      : pickFrom(morningByCity[seed.city] ?? morningByCity.Bangkok ?? [], `${seed.date}-${seed.city}-am`);
 
     const evening = matchingEvent
       ? `Catch ${matchingEvent.name} in the evening, then a late supper.`
-      : eveningIdeas[index % eveningIdeas.length];
+      : seed.day === seeds.length && seed.city === "Bangkok"
+        ? "Pack, grab a simple dinner, and get an early night for travel."
+        : pickFrom(eveningByCity[seed.city] ?? eveningByCity.Bangkok ?? [], `${seed.date}-${seed.city}-pm`);
 
     return {
       day: seed.day,
       date: seed.date,
       city: seed.city,
       ...(seed.travelFrom ? { travelFrom: seed.travelFrom } : {}),
-      title,
+      title: buildDayTitle({ seed, index, duration: seeds.length }),
       afternoon: featured,
       morning,
       evening,
@@ -210,7 +373,6 @@ const replaceItinerary = async (input: ItinerarySuggestionInput) => {
     .from("itinerary_suggestions")
     .delete()
     .eq("window_start", input.windowStart)
-    .eq("window_end", input.windowEnd)
     .eq("duration_days", input.durationDays);
 
   const payload = {
@@ -306,6 +468,14 @@ const generateItineraryWithOpenAI = async (params: {
   }
 };
 
+const isLowVariety = (days: ItineraryDay[]) => {
+  const take = (value: string) => value.trim().toLowerCase();
+  const morningUnique = new Set(days.map((row) => take(row.morning))).size;
+  const eveningUnique = new Set(days.map((row) => take(row.evening))).size;
+  const threshold = Math.max(3, Math.ceil(days.length * 0.6));
+  return morningUnique < threshold || eveningUnique < threshold;
+};
+
 const buildDaySeeds = (
   deals: DealSeed[],
   duration: number,
@@ -351,11 +521,60 @@ const buildDaySeeds = (
   return seeds.slice(0, duration);
 };
 
+const buildDealPool = (deals: Awaited<ReturnType<typeof getExperienceDeals>>): DealSeed[] => {
+  const byCity = new Map<string, DealSeed[]>();
+  for (const deal of deals) {
+    const city = deal.city ?? null;
+    if (!city) continue;
+    const row: DealSeed = {
+      id: deal.id,
+      title: deal.title,
+      city,
+      category: deal.category ?? null,
+      price: deal.price ?? null,
+      currency: deal.currency ?? null,
+      rating: deal.rating ?? null,
+      url: deal.url,
+    };
+    const list = byCity.get(city) ?? [];
+    list.push(row);
+    byCity.set(city, list);
+  }
+
+  const cities = THAI_HUB_CITIES.filter((city) => city !== "Bangkok");
+  for (const city of cities) {
+    const list = byCity.get(city) ?? [];
+    list.sort((a, b) => {
+      const aHas = a.price && a.rating ? 1 : 0;
+      const bHas = b.price && b.rating ? 1 : 0;
+      if (aHas !== bHas) return bHas - aHas;
+      const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
+      if (ratingDiff !== 0) return ratingDiff;
+      return (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY);
+    });
+    byCity.set(city, list.slice(0, 60));
+  }
+
+  const bangkok = byCity.get("Bangkok") ?? [];
+  bangkok.sort((a, b) => {
+    const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
+    if (ratingDiff !== 0) return ratingDiff;
+    return (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY);
+  });
+  byCity.set("Bangkok", bangkok.slice(0, 60));
+
+  const flattened: DealSeed[] = [];
+  for (const city of THAI_HUB_CITIES) {
+    flattened.push(...(byCity.get(city) ?? []));
+  }
+  return flattened;
+};
+
 export const runItineraryAgent = async (): Promise<ItineraryAgentResult> => {
   const [flightHistory, hotelHistoryByCity, deals] = await Promise.all([
     getRecentFlightPrices(30),
     getHotelHistoryByCity(undefined, 20),
-    getExperienceDeals({ topOnly: true, limit: 60, preferBookable: true }),
+    getExperienceDeals({ topOnly: true, limit: 160, preferBookable: true }),
   ]);
 
   const windows = getRecommendedWindows({
@@ -365,46 +584,56 @@ export const runItineraryAgent = async (): Promise<ItineraryAgentResult> => {
     maxWindows: 3,
   });
 
+  // Always include a start window for the actual trip start date so long itineraries map cleanly.
+  const tripStart = PRIMARY_TRIP.departDate;
+  if (!windows.some((row) => row.windowStart === tripStart)) {
+    windows.push({
+      windowStart: tripStart,
+      windowEnd: addDaysIso(tripStart, 4),
+      score: windows[0]?.score ?? 70,
+      label: "Trip start",
+    });
+  }
+
+  // In-country itinerary should end the day before PRIMARY_TRIP.returnDate so "return date" can be the flight home.
+  const inCountryEnd = addDaysIso(PRIMARY_TRIP.returnDate, -1);
+
   let inserted = 0;
   let skipped = 0;
 
+  const dealPoolAll = buildDealPool(deals);
+
   for (const window of windows) {
+    const maxDuration = daysBetweenInclusive(window.windowStart, inCountryEnd);
     for (const duration of DURATIONS) {
       try {
-        const dealPool = deals
-          .filter((deal) => deal.price && deal.rating)
-          .sort((a, b) => {
-            const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
-            if (ratingDiff !== 0) return ratingDiff;
-            return (a.price ?? 0) - (b.price ?? 0);
-          })
-          .slice(0, 24)
-          .map((deal) => ({
-            id: deal.id,
-            title: deal.title,
-            city: deal.city,
-            price: deal.price,
-            currency: deal.currency,
-            rating: deal.rating,
-            url: deal.url,
-          }));
+        if (duration > maxDuration) {
+          skipped += 1;
+          continue;
+        }
 
         const end = addDaysIso(window.windowStart, duration - 1);
         const events = await getEventsInRange({ start: window.windowStart, end }).catch(() => []);
 
-        const daySeeds = buildDaySeeds(dealPool, duration, window.windowStart);
+        const daySeeds = buildDaySeeds(dealPoolAll, duration, window.windowStart);
 
-        const ai = await generateItineraryWithOpenAI({
-          windowStart: window.windowStart,
-          windowEnd: window.windowEnd,
-          duration,
-          score: window.score,
-          daySeeds,
-          events,
-        });
+        // For longer trips, deterministic output is more reliable (and avoids repetitive LLM patterns).
+        const allowAI = duration <= 10;
 
-        const rawDays =
-          ai?.days?.length === duration ? ai.days : buildFallbackItinerary(daySeeds, events);
+        const ai = allowAI
+          ? await generateItineraryWithOpenAI({
+              windowStart: window.windowStart,
+              windowEnd: end,
+              duration,
+              score: window.score,
+              daySeeds,
+              events,
+            })
+          : null;
+
+        const aiDaysOk =
+          ai?.days?.length === duration && Array.isArray(ai.days) && !isLowVariety(ai.days);
+        const rawDays = aiDaysOk ? ai!.days! : buildFallbackItinerary(daySeeds, events);
 
         const days = rawDays.slice(0, duration).map((day, index) => {
           const seed = daySeeds[index];
@@ -414,18 +643,19 @@ export const runItineraryAgent = async (): Promise<ItineraryAgentResult> => {
             date: seed.date,
             city: seed.city,
             ...(seed.travelFrom ? { travelFrom: seed.travelFrom } : {}),
+            title: buildDayTitle({ seed, index, duration }),
             deal_ids: seed.deal ? [seed.deal.id] : [],
           };
         });
 
+        const header = buildItineraryHeader(daySeeds, window.windowStart, end);
+
         await replaceItinerary({
           windowStart: window.windowStart,
-          windowEnd: window.windowEnd,
+          windowEnd: end,
           durationDays: duration,
-          title: ai?.title ?? `Thailand ${duration}-day rhythm`,
-          summary:
-            ai?.summary ??
-            "Balanced days mixing culture, food, and a standout experience in each city.",
+          title: header.title,
+          summary: header.summary,
           days,
           score: window.score,
         });
