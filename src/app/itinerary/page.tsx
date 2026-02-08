@@ -23,6 +23,9 @@ export default async function ItineraryPage({
 }: {
   searchParams?: { window?: string; duration?: string };
 }) {
+  const resolvedParams = await Promise.resolve(searchParams);
+  const takeFirst = (value?: string | string[]) =>
+    Array.isArray(value) ? value[0] : value;
   const suggestions = await getItinerarySuggestions();
   const windows = Array.from(
     new Map(
@@ -30,8 +33,8 @@ export default async function ItineraryPage({
     ).values()
   );
 
-  const selectedWindowKey = searchParams?.window ?? makeWindowKey(windows[0]);
-  const durationFromQuery = Number(searchParams?.duration ?? "");
+  const selectedWindowKey = takeFirst(resolvedParams?.window) ?? makeWindowKey(windows[0]);
+  const durationFromQuery = Number(takeFirst(resolvedParams?.duration) ?? "");
 
   const availableForWindow = suggestions.filter(
     (row) => makeWindowKey(row) === selectedWindowKey

@@ -25,9 +25,12 @@ export default async function ExperiencesPage({
 }: {
   searchParams?: { city?: string; category?: string; top?: string };
 }) {
-  const selectedCity = searchParams?.city ?? "all";
-  const selectedCategory = searchParams?.category ?? "all";
-  const topOnly = searchParams?.top === "1";
+  const resolvedParams = await Promise.resolve(searchParams);
+  const takeFirst = (value?: string | string[]) =>
+    Array.isArray(value) ? value[0] : value;
+  const selectedCity = takeFirst(resolvedParams?.city) ?? "all";
+  const selectedCategory = takeFirst(resolvedParams?.category) ?? "all";
+  const topOnly = takeFirst(resolvedParams?.top) === "1";
 
   const deals = await getExperienceDeals({
     city: selectedCity === "all" ? undefined : selectedCity,
