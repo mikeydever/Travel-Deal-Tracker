@@ -5,9 +5,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase/client";
 import {
   normalizeViatorProduct,
   viatorExchangeRates,
-  viatorProductsBulk,
   viatorSearchFreetext,
-  type ViatorProduct,
   type ViatorSearchResult,
 } from "@/agents/adapters/viatorApi";
 
@@ -34,16 +32,6 @@ const getExistingUrls = async (date: string) => {
 
   return new Set((data ?? []).map((row: { url: string }) => row.url));
 };
-
-const extractProductCodes = (results: ViatorSearchResult[]) =>
-  results
-    .map((result) =>
-      typeof result.productCode === "string" ? result.productCode : null
-    )
-    .filter((value): value is string => Boolean(value));
-
-const pickProducts = (response: { products?: ViatorProduct[]; data?: ViatorProduct[] }) =>
-  response.products ?? response.data ?? [];
 
 const resolveExchangeRates = async (currency = "CAD") => {
   try {
@@ -105,10 +93,10 @@ export const runViatorExperienceAgent = async (
       try {
         const searchResponse = await viatorSearchFreetext({
           searchTerm: term,
-          currencyCode: "CAD",
+          currency: "CAD",
           topX: resultsPerQuery,
         });
-        searchResults = searchResponse.products ?? searchResponse.data ?? [];
+        searchResults = searchResponse.products?.results ?? [];
         queries += 1;
       } catch (error) {
         console.warn("[viator] search failed", error);
@@ -116,76 +104,67 @@ export const runViatorExperienceAgent = async (
         continue;
       }
 
-      const productCodes = extractProductCodes(searchResults);
-      if (!productCodes.length) {
-        skipped += searchResults.length;
+      if (!searchResults.length) {
+        skipped += 1;
         continue;
       }
 
-      try {
-        const detailsResponse = await viatorProductsBulk(productCodes);
-        const products = pickProducts(detailsResponse);
+      for (const product of searchResults) {
+        if (inserted >= maxDeals) break;
 
-        for (const product of products) {
-          if (inserted >= maxDeals) break;
-
-          const normalized = normalizeViatorProduct(product);
-          if (!normalized.productUrl) {
-            skipped += 1;
-            continue;
-          }
-
-          let sourceDomain = "viator.com";
-          try {
-            sourceDomain = normalizeDomain(new URL(normalized.productUrl).hostname);
-          } catch (error) {
-            console.warn("[viator] invalid product url", normalized.productUrl, error);
-          }
-
-          if (seen.has(normalized.productUrl)) {
-            skipped += 1;
-            continue;
-          }
-
-          const converted = convertPrice(
-            normalized.price ?? null,
-            normalized.currency ?? null,
-            exchangeRates
-          );
-
-          try {
-            await saveExperienceDeal({
-              title: normalized.title ?? `${city} experience`,
-              city,
-              category,
-              price: converted.price,
-              currency: converted.currency ?? normalized.currency ?? null,
-              rating: normalized.rating ?? null,
-              reviewsCount: normalized.reviewsCount ?? null,
-              url: normalized.productUrl,
-              imageUrl: normalized.imageUrl ?? null,
-              summary: normalized.summary ?? null,
-              sourceDomain,
-              scoutedDate: date,
-              confidence: 0.9,
-              needsReview: false,
-              metadata: {
-                provider: "viator",
-                productCode: normalized.productCode,
-                searchTerm: term,
-              },
-            });
-
-            seen.add(normalized.productUrl);
-            inserted += 1;
-          } catch (error) {
-            console.warn("[viator] insert failed", error);
-            errors += 1;
-          }
+        const normalized = normalizeViatorProduct(product);
+        if (!normalized.productUrl) {
+          skipped += 1;
+          continue;
         }
-      } catch (error) {
-        console.warn("[viator] bulk fetch failed", error);
-        errors += 1;
+
+        let sourceDomain = "viator.com";
+        try {
+          sourceDomain = normalizeDomain(new URL(normalized.productUrl).hostname);
+        } catch (error) {
+          console.warn("[viator] invalid product url", normalized.productUrl, error);
+        }
+
+        if (seen.has(normalized.productUrl)) {
+          skipped += 1;
+          continue;
+        }
+
+        const converted = convertPrice(
+          normalized.price ?? null,
+          normalized.currency ?? null,
+          exchangeRates
+        );
+
+        try {
+          await saveExperienceDeal({
+            title: normalized.title ?? `${city} experience`,
+            city,
+            category,
+            price: converted.price,
+            currency: converted.currency ?? normalized.currency ?? null,
+            rating: normalized.rating ?? null,
+            reviewsCount: normalized.reviewsCount ?? null,
+            url: normalized.productUrl,
+            imageUrl: normalized.imageUrl ?? null,
+            summary: normalized.summary ?? null,
+            sourceDomain,
+            scoutedDate: date,
+            confidence: 0.9,
+            needsReview: false,
+            metadata: {
+              provider: "viator",
+              productCode: normalized.productCode,
+              searchTerm: term,
+            },
+          });
+
+          seen.add(normalized.productUrl);
+          inserted += 1;
+        } catch (error) {
+          console.warn("[viator] insert failed", error);
+          errors += 1;
+        }
       }
     }
   }

@@ -50,11 +50,13 @@ export interface ViatorSearchResult {
   productUrl?: string;
   title?: string;
   description?: string;
-  rating?: number;
-  reviewCount?: number;
-  price?: number;
-  currency?: string;
-  primaryImageUrl?: string;
+  images?: Array<{ url?: string; variants?: Array<{ url?: string }> }>;
+  pricing?: { summary?: { fromPrice?: number; fromPriceBeforeDiscount?: number }; currency?: string };
+  reviews?: {
+    sources?: Array<{ provider?: string; totalCount?: number; averageRating?: number }>;
+    totalReviews?: number;
+    combinedAverageRating?: number;
+  };
   [key: string]: unknown;
 }
 
@@ -74,19 +76,26 @@ export interface ViatorProduct {
 
 export const viatorSearchFreetext = async (input: {
   searchTerm: string;
-  currencyCode?: string;
+  currency?: string;
   topX?: number;
   sortOrder?: string;
 }) =>
-  viatorFetch<{ products?: ViatorSearchResult[]; data?: ViatorSearchResult[] }>(
+  viatorFetch<{ products?: { totalCount?: number; results?: ViatorSearchResult[] } }>(
     "/search/freetext",
     {
       body: {
         searchTerm: input.searchTerm,
-        searchTypes: ["PRODUCTS"],
-        currencyCode: input.currencyCode ?? "CAD",
+        currency: input.currency ?? "CAD",
+        searchTypes: [
+          {
+            searchType: "PRODUCTS",
+            pagination: {
+              start: 1,
+              count: input.topX ?? 12,
+            },
+          },
+        ],
         sortOrder: input.sortOrder ?? "RATING",
-        topX: input.topX ?? 12,
       },
     }
   );
