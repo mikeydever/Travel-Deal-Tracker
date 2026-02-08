@@ -15,6 +15,7 @@ const formatPrice = (deal: ExperienceDealRow) => {
   return new Intl.NumberFormat("en-CA", {
     style: "currency",
     currency: deal.currency,
+    currencyDisplay: deal.currency === "CAD" ? "code" : "symbol",
     maximumFractionDigits: 0,
   }).format(deal.price);
 };
