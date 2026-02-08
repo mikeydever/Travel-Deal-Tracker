@@ -1,4 +1,4 @@
-import { fetchMockHotelAverage } from "@/agents/adapters/hotelApi";
+import { fetchHotelAverage } from "@/agents/adapters/hotelApi";
 import { THAI_HUB_CITIES } from "@/config/travel";
 import { saveHotelSample } from "@/data/hotelPrices";
 
@@ -10,12 +10,13 @@ export interface HotelAgentResult {
 export const runHotelAgent = async (): Promise<HotelAgentResult> => {
   const entries = await Promise.all(
     THAI_HUB_CITIES.map(async (city) => {
-      const average = await fetchMockHotelAverage(city);
+      const average = await fetchHotelAverage(city);
 
       await saveHotelSample({
         city,
         avgPrice: average.avgPrice,
         currency: average.currency,
+        metadata: average.metadata,
       });
 
       return { city, avgPrice: average.avgPrice };

@@ -5,7 +5,14 @@ import { getLatestHotelSnapshots } from "@/data/hotelPrices";
 
 export const dynamic = "force-dynamic";
 
-const currency = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
+const flightCurrency = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
+const currencyFormatters = new Map<string, Intl.NumberFormat>();
+const formatCurrency = (value: number, currency = "CAD") => {
+  if (!currencyFormatters.has(currency)) {
+    currencyFormatters.set(currency, new Intl.NumberFormat("en-CA", { style: "currency", currency }));
+  }
+  return currencyFormatters.get(currency)?.format(value) ?? `${value.toFixed(0)} ${currency}`;
+};
 
 const readinessChecklist = [
   "Supabase schema planned",
@@ -104,7 +111,7 @@ export default async function Home() {
           <article className="rounded-3xl border border-[var(--card-border)] bg-white/90 p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest flight signal</p>
             <h2 className="mt-2 text-3xl font-semibold text-slate-900">
-              {latestFlight ? currency.format(latestFlight.price) : "--"}
+              {latestFlight ? flightCurrency.format(latestFlight.price) : "--"}
             </h2>
             <p className="mt-1 text-sm text-slate-600">
               Checked {latestFlight ? formatDateTime(latestFlight.checked_at) : "n/a"}
@@ -112,7 +119,9 @@ export default async function Home() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs uppercase text-slate-400">7-day median</p>
-                <p className="text-xl font-semibold text-slate-900">{currency.format(getMedianPrice(flightHistory.slice(-7)))}</p>
+                <p className="text-xl font-semibold text-slate-900">
+                  {flightCurrency.format(getMedianPrice(flightHistory.slice(-7)))}
+                </p>
               </div>
               <div>
                 <p className="text-xs uppercase text-slate-400">Δ vs last pull</p>
@@ -122,7 +131,7 @@ export default async function Home() {
                   }`}
                 >
                   {flightDelta >= 0 ? "+" : "-"}
-                  {currency.format(Math.abs(flightDelta))}
+                  {flightCurrency.format(Math.abs(flightDelta))}
                 </p>
               </div>
             </div>
@@ -142,7 +151,9 @@ export default async function Home() {
                     <p className="text-xs text-slate-500">Daily average</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-semibold text-slate-900">{currency.format(sample.avg_price)}</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {formatCurrency(sample.avg_price, sample.currency)}
+                    </p>
                     <p className="text-xs text-slate-500">{new Date(sample.checked_at).toLocaleDateString("en", { month: "short", day: "numeric" })}</p>
                   </div>
                 </li>

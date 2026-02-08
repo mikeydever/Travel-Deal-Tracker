@@ -1,8 +1,8 @@
 import { THAI_HUB_CITIES } from "@/config/travel";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase/client";
-import type { HotelSampleInput } from "@/types/pricing";
+import type { HotelMetadata, HotelSampleInput } from "@/types/pricing";
 
-const SELECT_FIELDS = "id, city, avg_price, currency, checked_at";
+const SELECT_FIELDS = "id, city, avg_price, currency, checked_at, metadata";
 
 export interface HotelPriceRow {
   id: string;
@@ -10,6 +10,7 @@ export interface HotelPriceRow {
   avg_price: number;
   currency: string;
   checked_at: string;
+  metadata?: HotelMetadata;
 }
 
 export const saveHotelSample = async (sample: HotelSampleInput) => {
@@ -19,6 +20,7 @@ export const saveHotelSample = async (sample: HotelSampleInput) => {
     avg_price: sample.avgPrice,
     currency: sample.currency,
     checked_at: sample.checkedAt ?? new Date().toISOString(),
+    metadata: sample.metadata ?? {},
   };
 
   const { data, error } = await client
@@ -47,6 +49,7 @@ const buildFallbackHotelHistory = (city: string, limit = 14): HotelPriceRow[] =>
       avg_price: Math.round(price * 100) / 100,
       currency: "CAD",
       checked_at: timestamp.toISOString(),
+      metadata: { source: "mock" },
     };
   });
 };

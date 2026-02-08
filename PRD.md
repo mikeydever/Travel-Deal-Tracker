@@ -76,6 +76,12 @@ Display alongside price data.
 
 ---
 
+### 6. Trip Recommendations
+- Use the festival calendar + price signals to suggest the best date windows (within Oct 28 – Nov 18).
+- Hotel searches should prioritize the recommended window when available.
+
+---
+
 ## Success Metrics
 
 - Daily price collection success rate >95%

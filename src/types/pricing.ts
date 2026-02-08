@@ -39,11 +39,24 @@ export interface FlightSampleInput {
   metadata?: FlightMetadata;
 }
 
+export interface HotelMetadata {
+  source?: "mock" | "rapidapi";
+  geoId?: string;
+  locationName?: string;
+  checkIn?: string;
+  checkOut?: string;
+  sampleSize?: number;
+  totalHotels?: number;
+  currencyRequested?: string;
+  currencyDetected?: string;
+}
+
 export interface HotelAverageResponse {
   city: string;
   avgPrice: number;
   currency: string;
   sampleSize: number;
+  metadata?: HotelMetadata;
 }
 
 export interface HotelSampleInput {
@@ -51,4 +64,5 @@ export interface HotelSampleInput {
   avgPrice: number;
   currency: string;
   checkedAt?: string;
+  metadata?: HotelMetadata;
 }

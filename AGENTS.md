@@ -21,6 +21,7 @@ Responsibilities:
 - Query hotel API
 - Compute avg nightly price
 - Save to DB
+- Use the recommended trip window when available
 
 Runs:
 - Daily
@@ -42,3 +43,4 @@ Runs:
 Responsibilities:
 - Maintain event list
 - Update occasionally
+- Suggest date windows + locations for pricing focus

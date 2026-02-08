@@ -4,7 +4,13 @@ import { getHotelHistoryByCity, getLatestHotelSnapshots } from "@/data/hotelPric
 
 export const dynamic = "force-dynamic";
 
-const currency = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
+const currencyFormatters = new Map<string, Intl.NumberFormat>();
+const formatCurrency = (value: number, currency = "CAD") => {
+  if (!currencyFormatters.has(currency)) {
+    currencyFormatters.set(currency, new Intl.NumberFormat("en-CA", { style: "currency", currency }));
+  }
+  return currencyFormatters.get(currency)?.format(value) ?? `${value.toFixed(0)} ${currency}`;
+};
 
 const formatTimestamp = (value: string | Date) =>
   new Date(value).toLocaleDateString("en", { month: "short", day: "numeric" });
@@ -21,6 +27,7 @@ export default async function HotelsPage() {
     city,
     rows,
     data: rows.map((row) => ({ checkedAt: row.checked_at, avgPrice: row.avg_price })),
+    currency: rows.at(-1)?.currency ?? "CAD",
   }));
 
   return (
@@ -69,11 +76,15 @@ export default async function HotelsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500">{row.city}</p>
-                  <p className="text-2xl font-semibold text-slate-900">{currency.format(row.avg_price)}</p>
+                  <p className="text-2xl font-semibold text-slate-900">
+                    {formatCurrency(row.avg_price, row.currency)}
+                  </p>
                 </div>
                 <span className="text-xs text-slate-500">{formatTimestamp(row.checked_at)}</span>
               </div>
-              <p className="mt-2 text-sm text-slate-600">Sample size: --</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Sample size: {typeof row.metadata?.sampleSize === "number" ? row.metadata.sampleSize : "--"}
+              </p>
             </div>
           ))}
         </div>
@@ -92,10 +103,10 @@ export default async function HotelsPage() {
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500">{card.city}</p>
                   <p className="text-lg font-semibold text-slate-900">
-                    {currency.format(card.rows.at(-1)?.avg_price ?? 0)}
+                    {formatCurrency(card.rows.at(-1)?.avg_price ?? 0, card.currency)}
                   </p>
                 </div>
-                <p className="text-xs text-slate-500">↑ {getRange(card.rows)} range</p>
+                <p className="text-xs text-slate-500">↑ {getRange(card.rows, card.currency)} range</p>
               </div>
               <div className="mt-3 rounded-xl bg-white/80 p-2">
                 <HotelSparkline data={card.data} />
@@ -108,10 +119,10 @@ export default async function HotelsPage() {
   );
 }
 
-const getRange = (rows: { avg_price: number }[]) => {
+const getRange = (rows: { avg_price: number }[], currency: string) => {
   if (!rows.length) return "--";
   const prices = rows.map((row) => row.avg_price);
   const max = Math.max(...prices);
   const min = Math.min(...prices);
-  return `${Math.round(max - min)} CAD`;
+  return formatCurrency(Math.round(max - min), currency);
 };

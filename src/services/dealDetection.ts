@@ -49,6 +49,7 @@ export const evaluateDealTriggers = async () => {
     const rows = hotelHistories[city] ?? [];
     if (rows.length < 2) continue;
     const latest = rows[rows.length - 1];
+    const currency = latest.currency ?? "CAD";
     const avg30 = rows.reduce((sum, row) => sum + row.avg_price, 0) / rows.length;
     const minPrice = Math.min(...rows.map((row) => row.avg_price));
     const dropType = ALERT_TYPES.HOTEL_DROP(city);
@@ -59,14 +60,14 @@ export const evaluateDealTriggers = async () => {
         type: dropType,
         message: `${city} hotels dropped ${Math.round(
           ((avg30 - latest.avg_price) / avg30) * 100
-        )}% vs 30-day avg (${avg30.toFixed(0)} CAD).`,
+        )}% vs 30-day avg (${avg30.toFixed(0)} ${currency}).`,
       });
     }
 
     if (latest.avg_price <= minPrice) {
       triggers.push({
         type: lowType,
-        message: `${city} hotels reached a new low at ${latest.avg_price} CAD.`,
+        message: `${city} hotels reached a new low at ${latest.avg_price} ${currency}.`,
       });
     }
   }

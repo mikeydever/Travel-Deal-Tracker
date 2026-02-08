@@ -7,6 +7,18 @@ export const PRIMARY_TRIP = {
   cabin: "Economy",
 };
 
+export const HOTEL_SEARCH_DEFAULT_NIGHTS = 5;
+export const HOTEL_SEARCH_CURRENCY = "CAD";
+export const HOTEL_SEARCH_ADULTS = 2;
+export const HOTEL_SEARCH_ROOMS = 1;
+export const HOTEL_GEOID_OVERRIDES: Record<string, string> = {
+  Bangkok: "293916",
+  Phuket: "293920",
+  "Chiang Mai": "293917",
+  Krabi: "297927",
+  "Koh Samui": "293918",
+};
+
 export const THAI_HUB_CITIES = [
   "Bangkok",
   "Chiang Mai",
