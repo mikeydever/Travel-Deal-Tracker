@@ -27,7 +27,7 @@ const buildFallbackDeals = (limit = 12): ExperienceDealRow[] => {
       currency: "CAD",
       rating: 4.6,
       reviews_count: 120 + index * 7,
-      url: "https://example.com",
+      url: `https://example.com/deal/${index}`,
       image_url: null,
       summary: "Curated highlight while live scout data loads.",
       source_domain: "curated",
@@ -110,7 +110,8 @@ export const getExperienceDeals = async (options?: {
     }
 
     if (!data || data.length === 0) {
-      return buildFallbackDeals(limit);
+      const hasFilters = Boolean(options?.city || options?.category || options?.topOnly);
+      return hasFilters ? [] : buildFallbackDeals(limit);
     }
 
     return data as ExperienceDealRow[];

@@ -12,6 +12,9 @@
 - Experiences scout + `/experiences` page.
 - Itinerary generator + `/itinerary` page.
 - New cron scopes for `photo`, `experiences`, `itinerary`.
+- Flight API temporarily disabled via `FLIGHT_API_DISABLED_UNTIL=2026-02-08` to prevent overages (auto-reenables on 2026-02-09).
+- Added `/flights/offers` for top-3 overall + top-3 direct fare details.
+- Experiences page now supports saved items (local storage) + fixed filters.
 
 ## Verification
 - Pending: validate new cron scopes and data availability once new env vars are set.

@@ -1,8 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
+"use client";
+
 import type { ExperienceDealRow } from "@/types/experiences";
+import { useSavedExperiences } from "@/hooks/useSavedExperiences";
 
 interface ExperiencesGridProps {
   deals: ExperienceDealRow[];
+  showSave?: boolean;
+  emptyState?: string;
 }
 
 const formatPrice = (deal: ExperienceDealRow) => {
@@ -14,7 +19,17 @@ const formatPrice = (deal: ExperienceDealRow) => {
   }).format(deal.price);
 };
 
-export function ExperiencesGrid({ deals }: ExperiencesGridProps) {
+export function ExperiencesGrid({ deals, showSave = true, emptyState }: ExperiencesGridProps) {
+  const { isSaved, toggleSave } = useSavedExperiences();
+
+  if (!deals.length) {
+    return (
+      <div className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 text-sm text-[var(--muted)]">
+        {emptyState ?? "No experiences match these filters yet."}
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {deals.map((deal) => (
@@ -38,6 +53,19 @@ export function ExperiencesGrid({ deals }: ExperiencesGridProps) {
               <span className="absolute left-4 top-4 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-400">
                 Needs review
               </span>
+            ) : null}
+            {showSave ? (
+              <button
+                type="button"
+                onClick={() => toggleSave(deal)}
+                className={`absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
+                  isSaved(deal)
+                    ? "bg-[var(--accent)] text-black"
+                    : "bg-black/40 text-white"
+                }`}
+              >
+                {isSaved(deal) ? "Saved" : "Save"}
+              </button>
             ) : null}
           </div>
           <div className="flex flex-1 flex-col gap-4 p-5">

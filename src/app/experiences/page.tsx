@@ -1,6 +1,6 @@
 import { NavPills } from "@/components/NavPills";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ExperiencesGrid } from "@/components/ExperiencesGrid";
+import { ExperiencesClient } from "@/components/ExperiencesClient";
 import { THAI_HUB_CITIES } from "@/config/travel";
 import { SCOUT_CATEGORIES } from "@/config/scout";
 import { getExperienceDeals } from "@/data/experienceDeals";
@@ -113,14 +113,7 @@ export default async function ExperiencesPage({
         </div>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-[var(--muted)]">
-            Showing {deals.length} experiences {topOnly ? "(top confidence)" : ""}
-          </p>
-        </div>
-        <ExperiencesGrid deals={deals} />
-      </section>
+      <ExperiencesClient deals={deals} />
     </div>
   );
 }

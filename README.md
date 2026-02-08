@@ -99,6 +99,7 @@ Keep these files up to date as we implement later phases.
 - `/hotels`: city snapshots and micro area charts for each Thai hub.
 - `/experiences`: daily scout of tours + attractions (allowlist only).
 - `/itinerary`: suggested travel windows + 3/5/7/10-day itineraries.
+- `/flights/offers`: top 3 overall + top 3 direct fares from the latest API snapshot.
 
 All pages are built with responsive Tailwind layouts so they stay readable on mobile.
 
