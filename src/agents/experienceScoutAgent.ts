@@ -123,7 +123,8 @@ export const runExperienceScoutAgent = async (
       });
       return viatorResult;
     } catch (error) {
-      console.warn("[experienceScout] viator agent failed, falling back to web scout", error);
+      console.warn("[experienceScout] viator agent failed; skipping web scout fallback", error);
+      return { inserted: 0, skipped: 0, errors: 1, date, queries: 0 };
     }
   }
 
