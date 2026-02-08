@@ -118,8 +118,8 @@ export const runExperienceScoutAgent = async (
   if (env.VIATOR_API_KEY) {
     try {
       const viatorResult = await runViatorExperienceAgent({
-        maxDeals: options.maxDeals ?? SCOUT_DEFAULT_LIMIT,
-        resultsPerQuery: options.resultsPerQuery ?? SCOUT_MAX_RESULTS_PER_QUERY,
+        maxDeals: options.maxDeals,
+        resultsPerQuery: options.resultsPerQuery,
       });
       return viatorResult;
     } catch (error) {
