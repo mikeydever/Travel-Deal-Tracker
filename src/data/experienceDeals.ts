@@ -88,7 +88,7 @@ export const getExperienceDeals = async (options?: {
     cutoff.setDate(cutoff.getDate() - 14);
     const cutoffString = cutoff.toISOString().slice(0, 10);
 
-    const buildQuery = () => {
+    const buildQuery = (bookableOnly: boolean) => {
       let query = client
         .from("experience_deals")
         .select(SELECT_FIELDS)
@@ -96,6 +96,14 @@ export const getExperienceDeals = async (options?: {
         .order("scouted_date", { ascending: false })
         .order("confidence", { ascending: false })
         .limit(limit);
+
+      if (bookableOnly && BOOKABLE_PROVIDER_DOMAINS.length > 0) {
+        query = query
+          .in("source_domain", BOOKABLE_PROVIDER_DOMAINS)
+          .eq("needs_review", false)
+          .not("price", "is", null)
+          .not("rating", "is", null);
+      }
 
       if (options?.city) {
         query = query.eq("city", options.city);
@@ -111,16 +119,14 @@ export const getExperienceDeals = async (options?: {
     };
 
     if (preferBookable && BOOKABLE_PROVIDER_DOMAINS.length > 0) {
-      let bookableQuery = buildQuery();
-      bookableQuery = bookableQuery.in("source_domain", BOOKABLE_PROVIDER_DOMAINS);
-      bookableQuery = bookableQuery.or("price.not.is.null,rating.not.is.null");
-      const { data: bookableData, error } = await bookableQuery;
+      const { data: bookableData, error } = await buildQuery(true);
       if (!error && bookableData && bookableData.length > 0) {
         return bookableData as ExperienceDealRow[];
       }
+      return [];
     }
 
-    const { data, error } = await buildQuery();
+    const { data, error } = await buildQuery(false);
     if (error) {
       throw error;
     }
