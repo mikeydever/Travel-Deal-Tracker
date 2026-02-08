@@ -9,7 +9,9 @@ type OptionalKey =
   | "PEXELS_API_KEY"
   | "BRAVE_SEARCH_API_KEY"
   | "OPENAI_API_KEY"
-  | "FLIGHT_API_DISABLED_UNTIL";
+  | "FLIGHT_API_DISABLED_UNTIL"
+  | "VIATOR_API_KEY"
+  | "VIATOR_API_BASE";
 
 const warn = (message: string) => {
   if (process.env.NODE_ENV !== "production") {
@@ -42,6 +44,8 @@ export const env: Record<RequiredKey | OptionalKey, string> = {
   BRAVE_SEARCH_API_KEY: readEnv("BRAVE_SEARCH_API_KEY"),
   OPENAI_API_KEY: readEnv("OPENAI_API_KEY"),
   FLIGHT_API_DISABLED_UNTIL: readEnv("FLIGHT_API_DISABLED_UNTIL"),
+  VIATOR_API_KEY: readEnv("VIATOR_API_KEY"),
+  VIATOR_API_BASE: readEnv("VIATOR_API_BASE"),
 };
 
 export type Env = typeof env;

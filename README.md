@@ -44,6 +44,8 @@ Keep these files up to date as we implement later phases.
    - `PEXELS_API_KEY` – daily Thailand photo source
    - `BRAVE_SEARCH_API_KEY` – web scouting search API
    - `OPENAI_API_KEY` – deal extraction + itinerary narration
+   - `VIATOR_API_KEY` – Viator Partner API key for bookable experiences
+   - `VIATOR_API_BASE` – optional override (defaults to production Viator API base)
    - `CRON_SECRET` – shared secret used by the scheduled cron endpoint
 3. Run the development server
    ```bash

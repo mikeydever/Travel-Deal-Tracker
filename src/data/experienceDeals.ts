@@ -1,4 +1,4 @@
-import { SCOUT_CITIES } from "@/config/scout";
+import { BOOKABLE_PROVIDER_DOMAINS, SCOUT_CITIES } from "@/config/scout";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase/client";
 import type { ExperienceDealInput, ExperienceDealRow } from "@/types/experiences";
 
@@ -62,7 +62,7 @@ export const saveExperienceDeal = async (input: ExperienceDealInput) => {
 
   const { data, error } = await client
     .from("experience_deals")
-    .insert(payload)
+    .upsert(payload, { onConflict: "url" })
     .select()
     .single();
 
@@ -78,45 +78,64 @@ export const getExperienceDeals = async (options?: {
   category?: string;
   topOnly?: boolean;
   limit?: number;
+  preferBookable?: boolean;
 }): Promise<ExperienceDealRow[]> => {
   const limit = options?.limit ?? 24;
+  const preferBookable = options?.preferBookable ?? true;
   try {
     const client = getSupabaseServiceRoleClient();
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 14);
     const cutoffString = cutoff.toISOString().slice(0, 10);
 
-    let query = client
-      .from("experience_deals")
-      .select(SELECT_FIELDS)
-      .gte("scouted_date", cutoffString)
-      .order("scouted_date", { ascending: false })
-      .order("confidence", { ascending: false })
-      .limit(limit);
+    const buildQuery = () => {
+      let query = client
+        .from("experience_deals")
+        .select(SELECT_FIELDS)
+        .gte("scouted_date", cutoffString)
+        .order("scouted_date", { ascending: false })
+        .order("confidence", { ascending: false })
+        .limit(limit);
 
-    if (options?.city) {
-      query = query.eq("city", options.city);
-    }
-    if (options?.category) {
-      query = query.eq("category", options.category);
-    }
-    if (options?.topOnly) {
-      query = query.eq("needs_review", false).gte("confidence", 0.7);
+      if (options?.city) {
+        query = query.eq("city", options.city);
+      }
+      if (options?.category) {
+        query = query.eq("category", options.category);
+      }
+      if (options?.topOnly) {
+        query = query.eq("needs_review", false).gte("confidence", 0.7);
+      }
+
+      return query;
+    };
+
+    if (preferBookable && BOOKABLE_PROVIDER_DOMAINS.length > 0) {
+      let bookableQuery = buildQuery();
+      bookableQuery = bookableQuery.in("source_domain", BOOKABLE_PROVIDER_DOMAINS);
+      bookableQuery = bookableQuery.or("price.not.is.null,rating.not.is.null");
+      const { data: bookableData, error } = await bookableQuery;
+      if (!error && bookableData && bookableData.length > 0) {
+        return bookableData as ExperienceDealRow[];
+      }
     }
 
-    const { data, error } = await query;
+    const { data, error } = await buildQuery();
     if (error) {
       throw error;
     }
 
     if (!data || data.length === 0) {
       const hasFilters = Boolean(options?.city || options?.category || options?.topOnly);
+      if (preferBookable) {
+        return [];
+      }
       return hasFilters ? [] : buildFallbackDeals(limit);
     }
 
     return data as ExperienceDealRow[];
   } catch (error) {
     console.warn("[experience_deals] falling back to mocked data", error);
-    return buildFallbackDeals(limit);
+    return preferBookable ? [] : buildFallbackDeals(limit);
   }
 };

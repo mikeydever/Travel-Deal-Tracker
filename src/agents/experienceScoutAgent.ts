@@ -14,6 +14,7 @@ import { extractDeal } from "@/agents/adapters/dealExtractor";
 import { saveExperienceDeal } from "@/data/experienceDeals";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase/client";
 import { env } from "@/lib/env";
+import { runViatorExperienceAgent } from "@/agents/viatorExperienceAgent";
 
 export interface ExperienceScoutResult {
   inserted: number;
@@ -113,6 +114,18 @@ export const runExperienceScoutAgent = async (
   options: ExperienceScoutOptions = {}
 ): Promise<ExperienceScoutResult> => {
   const date = new Date().toISOString().slice(0, 10);
+
+  if (env.VIATOR_API_KEY) {
+    try {
+      const viatorResult = await runViatorExperienceAgent({
+        maxDeals: options.maxDeals ?? SCOUT_DEFAULT_LIMIT,
+        resultsPerQuery: options.resultsPerQuery ?? SCOUT_MAX_RESULTS_PER_QUERY,
+      });
+      return viatorResult;
+    } catch (error) {
+      console.warn("[experienceScout] viator agent failed, falling back to web scout", error);
+    }
+  }
 
   if (!env.BRAVE_SEARCH_API_KEY || !env.OPENAI_API_KEY) {
     console.warn("[experienceScout] missing BRAVE_SEARCH_API_KEY or OPENAI_API_KEY; skipping");

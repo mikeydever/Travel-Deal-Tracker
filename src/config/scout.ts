@@ -31,4 +31,6 @@ export const SCOUT_DEFAULT_LIMIT = 12;
 
 export const SCOUT_CONFIDENCE_THRESHOLD = 0.55;
 
+export const BOOKABLE_PROVIDER_DOMAINS = ["viator.com"];
+
 export type ScoutCategory = (typeof SCOUT_CATEGORIES)[number];
