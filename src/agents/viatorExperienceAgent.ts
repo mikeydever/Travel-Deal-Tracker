@@ -61,6 +61,7 @@ const convertPrice = (
 interface ViatorScoutOptions {
   maxDeals?: number;
   resultsPerQuery?: number;
+  perComboLimit?: number;
 }
 
 export const runViatorExperienceAgent = async (
@@ -75,8 +76,10 @@ export const runViatorExperienceAgent = async (
 
   const existing = await getExistingUrls(date);
   const seen = new Set<string>(existing);
-  const maxDeals = options.maxDeals ?? 36;
-  const resultsPerQuery = options.resultsPerQuery ?? 8;
+  const perComboLimit = options.perComboLimit ?? 3;
+  const maxDeals =
+    options.maxDeals ?? perComboLimit * SCOUT_CITIES.length * SCOUT_CATEGORIES.length;
+  const resultsPerQuery = options.resultsPerQuery ?? perComboLimit;
   const exchangeRates = await resolveExchangeRates("CAD");
 
   let inserted = 0;
@@ -88,6 +91,7 @@ export const runViatorExperienceAgent = async (
     for (const category of SCOUT_CATEGORIES) {
       if (inserted >= maxDeals) break;
       const term = `${city} ${category}`;
+      let comboInserted = 0;
 
       let searchResults: ViatorSearchResult[] = [];
       try {
@@ -110,7 +114,7 @@ export const runViatorExperienceAgent = async (
       }
 
       for (const product of searchResults) {
-        if (inserted >= maxDeals) break;
+        if (inserted >= maxDeals || comboInserted >= perComboLimit) break;
 
         const normalized = normalizeViatorProduct(product);
         if (!normalized.productUrl) {
@@ -161,6 +165,7 @@ export const runViatorExperienceAgent = async (
 
           seen.add(normalized.productUrl);
           inserted += 1;
+          comboInserted += 1;
         } catch (error) {
           console.warn("[viator] insert failed", error);
           errors += 1;
