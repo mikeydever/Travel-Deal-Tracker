@@ -1,6 +1,7 @@
 import { getExperienceDeals } from "@/data/experienceDeals";
 import { getRecentFlightPrices } from "@/data/flightPrices";
 import { getHotelHistoryByCity } from "@/data/hotelPrices";
+import { THAI_HUB_CITIES } from "@/config/travel";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase/client";
 import { env } from "@/lib/env";
 import { getRecommendedWindows } from "@/services/itineraryScoring";
@@ -14,34 +15,86 @@ export interface ItineraryAgentResult {
 
 const DURATIONS = [3, 5, 7, 10];
 
-const buildFallbackItinerary = (duration: number): ItineraryDay[] =>
-  Array.from({ length: duration }).map((_, index) => ({
-    day: index + 1,
-    title: index === 0 ? "Arrival + old town" : undefined,
-    morning: "Slow breakfast and a neighborhood walk.",
-    afternoon: "Main attraction focus with a guided experience.",
-    evening: "Night market or riverside dinner.",
-  }));
+interface DealSeed {
+  id: string;
+  title: string;
+  city?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  rating?: number | null;
+  url: string;
+}
 
-const hasItinerary = async (windowStart: string, windowEnd: string, duration: number) => {
-  const client = getSupabaseServiceRoleClient();
-  const { data, error } = await client
-    .from("itinerary_suggestions")
-    .select("id")
-    .eq("window_start", windowStart)
-    .eq("window_end", windowEnd)
-    .eq("duration_days", duration)
-    .limit(1);
+interface DaySeed {
+  day: number;
+  city: string;
+  deal?: DealSeed;
+}
 
-  if (error) {
-    throw error;
-  }
-
-  return Boolean(data && data.length);
+const formatDealPrice = (deal?: DealSeed) => {
+  if (!deal?.price || !deal.currency) return null;
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: deal.currency,
+    currencyDisplay: deal.currency === "CAD" ? "code" : "symbol",
+    maximumFractionDigits: 0,
+  }).format(deal.price);
 };
 
-const saveItinerary = async (input: ItinerarySuggestionInput) => {
+const buildFallbackItinerary = (seeds: DaySeed[]): ItineraryDay[] => {
+  const morningIdeas = [
+    "Temple circuit and a slow breakfast in the old quarter.",
+    "Local market stroll with street coffee and people-watching.",
+    "Sunrise viewpoint and a relaxed cafe start.",
+    "Neighborhood walk with a stop at a favorite bakery.",
+    "Riverside stroll and a light breakfast by the water.",
+  ];
+
+  const eveningIdeas = [
+    "Night market tasting and a casual bar hop.",
+    "Riverside dinner with a sunset view.",
+    "Food crawl with a focus on local specialties.",
+    "Rooftop or riverside drinks to wrap the day.",
+    "Low-key dinner and a short stroll through the lantern-lit streets.",
+  ];
+
+  return seeds.map((seed, index) => {
+    const deal = seed.deal;
+    const price = formatDealPrice(deal);
+    const rating = deal?.rating ? `${deal.rating.toFixed(1)}★` : null;
+    const featured = deal
+      ? `Featured experience: ${deal.title}${price ? ` (${price}` : ""}${
+          price && rating ? ", " : ""
+        }${rating ?? ""}${price || rating ? ")" : ""}.`
+      : `Guided highlight focusing on ${seed.city}.`;
+
+    const title =
+      index === 0
+        ? `Arrival + ${seed.city}`
+        : index === seeds.length - 1
+        ? `Last look at ${seed.city}`
+        : `${seed.city} highlights`;
+
+    return {
+      day: seed.day,
+      title,
+      morning: morningIdeas[index % morningIdeas.length],
+      afternoon: featured,
+      evening: eveningIdeas[index % eveningIdeas.length],
+      deal_ids: deal ? [deal.id] : [],
+    };
+  });
+};
+
+const replaceItinerary = async (input: ItinerarySuggestionInput) => {
   const client = getSupabaseServiceRoleClient();
+  await client
+    .from("itinerary_suggestions")
+    .delete()
+    .eq("window_start", input.windowStart)
+    .eq("window_end", input.windowEnd)
+    .eq("duration_days", input.durationDays);
+
   const payload = {
     window_start: input.windowStart,
     window_end: input.windowEnd,
@@ -70,19 +123,20 @@ const generateItineraryWithOpenAI = async (params: {
   windowEnd: string;
   duration: number;
   score: number;
-  deals: Array<{ title: string; city?: string | null; url: string }>;
+  daySeeds: DaySeed[];
 }) => {
   if (!env.OPENAI_API_KEY) {
     return null;
   }
 
   const system =
-    "You are a travel planner. Output JSON only. Create a concise itinerary with day-by-day morning/afternoon/evening plans.";
+    "You are a travel planner. Output JSON only. Create a concise itinerary with day-by-day morning/afternoon/evening plans. " +
+    "Vary each day, avoid repeating phrases, and use the provided day seeds.";
 
   const user = {
     window: { start: params.windowStart, end: params.windowEnd, score: params.score },
     duration: params.duration,
-    deals: params.deals,
+    daySeeds: params.daySeeds,
   };
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -101,7 +155,8 @@ const generateItineraryWithOpenAI = async (params: {
           role: "user",
           content:
             "Return JSON with keys: title, summary, days. days is an array of {day, morning, afternoon, evening, deal_ids}. " +
-            "Use deal_ids that correspond to the index of a deal (0-based) when you reference one.\nContext:\n" +
+            "Use the provided daySeeds as anchors: keep the same city and include the deal title in afternoon when provided. " +
+            "Set deal_ids to the deal id from daySeeds when used. Avoid repeating the same morning/afternoon/evening text.\nContext:\n" +
             JSON.stringify(user, null, 2),
         },
       ],
@@ -130,11 +185,47 @@ const generateItineraryWithOpenAI = async (params: {
   }
 };
 
+const buildDaySeeds = (deals: DealSeed[], duration: number): DaySeed[] => {
+  const byCity = new Map<string, DealSeed[]>();
+  for (const deal of deals) {
+    if (!deal.city) continue;
+    const city = deal.city;
+    const list = byCity.get(city) ?? [];
+    list.push(deal);
+    byCity.set(city, list);
+  }
+
+  const cities = Array.from(new Set([...byCity.keys(), ...THAI_HUB_CITIES]));
+  if (!cities.length) {
+    cities.push("Thailand");
+  }
+
+  const seeds: DaySeed[] = [];
+  const fallbackDeals = [...deals];
+
+  for (let i = 0; i < duration; i += 1) {
+    const city = cities[i % cities.length] ?? "Thailand";
+    const cityDeals = byCity.get(city) ?? [];
+    const deal = cityDeals.shift() ?? fallbackDeals.shift();
+    if (deal && deal.city && deal.city !== city) {
+      // keep deals aligned to city when possible
+      fallbackDeals.unshift(deal);
+    }
+    seeds.push({
+      day: i + 1,
+      city,
+      ...(deal ? { deal } : {}),
+    });
+  }
+
+  return seeds;
+};
+
 export const runItineraryAgent = async (): Promise<ItineraryAgentResult> => {
   const [flightHistory, hotelHistoryByCity, deals] = await Promise.all([
     getRecentFlightPrices(30),
     getHotelHistoryByCity(undefined, 20),
-    getExperienceDeals({ topOnly: true, limit: 10 }),
+    getExperienceDeals({ topOnly: true, limit: 60, preferBookable: true }),
   ]);
 
   const windows = getRecommendedWindows({
@@ -150,30 +241,38 @@ export const runItineraryAgent = async (): Promise<ItineraryAgentResult> => {
   for (const window of windows) {
     for (const duration of DURATIONS) {
       try {
-        const exists = await hasItinerary(window.windowStart, window.windowEnd, duration);
-        if (exists) {
-          skipped += 1;
-          continue;
-        }
+        const dealPool = deals
+          .filter((deal) => deal.price && deal.rating)
+          .sort((a, b) => {
+            const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
+            if (ratingDiff !== 0) return ratingDiff;
+            return (a.price ?? 0) - (b.price ?? 0);
+          })
+          .slice(0, 24)
+          .map((deal) => ({
+            id: deal.id,
+            title: deal.title,
+            city: deal.city,
+            price: deal.price,
+            currency: deal.currency,
+            rating: deal.rating,
+            url: deal.url,
+          }));
 
-        const topDeals = deals.slice(0, 6).map((deal, index) => ({
-          title: deal.title,
-          city: deal.city,
-          url: deal.url,
-          index,
-        }));
+        const daySeeds = buildDaySeeds(dealPool, duration);
 
         const ai = await generateItineraryWithOpenAI({
           windowStart: window.windowStart,
           windowEnd: window.windowEnd,
           duration,
           score: window.score,
-          deals: topDeals.map(({ title, city, url }) => ({ title, city, url })),
+          daySeeds,
         });
 
-        const days = ai?.days?.length ? ai.days : buildFallbackItinerary(duration);
+        const days =
+          ai?.days?.length === duration ? ai.days : buildFallbackItinerary(daySeeds);
 
-        await saveItinerary({
+        await replaceItinerary({
           windowStart: window.windowStart,
           windowEnd: window.windowEnd,
           durationDays: duration,

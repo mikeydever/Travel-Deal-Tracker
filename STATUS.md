@@ -16,6 +16,7 @@
 - Added `/flights/offers` for top-3 overall + top-3 direct fare details.
 - Experiences page now supports saved items (local storage) and filters that honor URL params.
 - Experiences scout now prefers Viator API (bookable deals with price + rating) when `VIATOR_API_KEY` is set.
+- Itinerary agent now seeds days from bookable experiences to avoid repetitive day plans.
 
 ## Verification
 - Pending: validate new cron scopes and data availability once new env vars are set.
