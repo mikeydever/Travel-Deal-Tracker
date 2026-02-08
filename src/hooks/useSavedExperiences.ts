@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ExperienceDealRow } from "@/types/experiences";
 
 const STORAGE_KEY = "tdd-saved-experiences";
-const SAVED_EVENT = "tdd-saved-experiences-change";
 
 const readSaved = () => {
   if (typeof window === "undefined") return {} as Record<string, ExperienceDealRow>;
@@ -22,24 +21,21 @@ const readSaved = () => {
 const writeSaved = (value: Record<string, ExperienceDealRow>) => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
-  window.dispatchEvent(new Event(SAVED_EVENT));
+  window.dispatchEvent(new Event("storage"));
 };
-
-const subscribe = (callback: () => void) => {
-  const handler = () => callback();
-  window.addEventListener("storage", handler);
-  window.addEventListener(SAVED_EVENT, handler);
-  return () => {
-    window.removeEventListener("storage", handler);
-    window.removeEventListener(SAVED_EVENT, handler);
-  };
-};
-
-const getSnapshot = () => readSaved();
-const getServerSnapshot = () => ({} as Record<string, ExperienceDealRow>);
 
 export const useSavedExperiences = () => {
-  const savedMap = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [savedMap, setSavedMap] = useState<Record<string, ExperienceDealRow>>({});
+
+  useEffect(() => {
+    const handleSync = () => {
+      setSavedMap(readSaved());
+    };
+
+    handleSync();
+    window.addEventListener("storage", handleSync);
+    return () => window.removeEventListener("storage", handleSync);
+  }, []);
 
   const savedDeals = useMemo(() => Object.values(savedMap), [savedMap]);
   const savedCount = savedDeals.length;
@@ -53,6 +49,7 @@ export const useSavedExperiences = () => {
     } else {
       next[deal.url] = deal;
     }
+    setSavedMap(next);
     writeSaved(next);
   };
 
