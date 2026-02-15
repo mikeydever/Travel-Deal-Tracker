@@ -55,6 +55,25 @@ const parsePrice = (value?: string | null) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const getMedian = (values: number[]) => {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[mid];
+};
+
+const selectBudgetSlice = (prices: number[]) => {
+  const sorted = [...prices].sort((a, b) => a - b);
+  const floor = 5;
+  const ceiling = 12;
+  const dynamic = Math.ceil(sorted.length * 0.35);
+  const size = Math.max(floor, Math.min(ceiling, dynamic, sorted.length));
+  return sorted.slice(0, size);
+};
+
 const extractCurrencyFromTrackingKey = (trackingKey?: string | null) => {
   if (!trackingKey) return undefined;
   try {
@@ -293,9 +312,12 @@ const buildHotelAverage = (
     throw new Error(`No hotel prices found for ${city}`);
   }
 
-  const total = prices.reduce((sum, value) => sum + value, 0);
-  const avgPrice = Math.round((total / prices.length) * 100) / 100;
+  const budgetSlice = selectBudgetSlice(prices);
+  const budgetTotal = budgetSlice.reduce((sum, value) => sum + value, 0);
+  const avgPrice = Math.round((budgetTotal / budgetSlice.length) * 100) / 100;
   const currencyDetected = extractCurrency(payload, params.currency);
+  const sortedAll = [...prices].sort((a, b) => a - b);
+  const median = getMedian(sortedAll);
 
   const metadata: HotelMetadata = {
     source: "rapidapi",
@@ -307,6 +329,10 @@ const buildHotelAverage = (
     totalHotels: hotels.length,
     currencyRequested: params.currency,
     currencyDetected,
+    pricingModel: "budget_avg_bottom_35pct",
+    priceMin: sortedAll[0],
+    priceMedian: Math.round(median * 100) / 100,
+    priceMax: sortedAll[sortedAll.length - 1],
   };
 
   return {

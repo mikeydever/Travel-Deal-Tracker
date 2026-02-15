@@ -66,6 +66,10 @@ export interface HotelMetadata {
   totalHotels?: number;
   currencyRequested?: string;
   currencyDetected?: string;
+  pricingModel?: string;
+  priceMin?: number;
+  priceMedian?: number;
+  priceMax?: number;
 }
 
 export interface HotelAverageResponse {
