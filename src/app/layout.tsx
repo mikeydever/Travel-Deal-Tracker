@@ -31,6 +31,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          data-noptimize="1"
+          data-cfasync="false"
+          data-wpfc-render="false"
+          dangerouslySetInnerHTML={{
+            __html: `
+(function () {
+  var script = document.createElement("script");
+  script.async = 1;
+  script.src = "https://tp-em.com/NDk5MTQ4.js?t=499148";
+  document.head.appendChild(script);
+})();`,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${displayFont.variable} antialiased bg-[var(--background)] text-[var(--foreground)]`}
       >
