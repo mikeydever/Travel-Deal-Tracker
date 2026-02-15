@@ -8,7 +8,6 @@ import { getDailyPhoto } from "@/data/dailyPhotos";
 
 export const dynamic = "force-dynamic";
 
-const flightCurrency = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
 const currencyFormatters = new Map<string, Intl.NumberFormat>();
 const formatCurrency = (value: number, currency = "CAD") => {
   if (!currencyFormatters.has(currency)) {
@@ -40,6 +39,9 @@ export default async function Home() {
   const previousFlight =
     flightHistory.length > 1 ? flightHistory[flightHistory.length - 2] : flightHistory[0];
   const flightDelta = latestFlight && previousFlight ? latestFlight.price - previousFlight.price : 0;
+  const flightCurrencyCode = latestFlight?.currency ?? flightHistory[0]?.currency ?? "CAD";
+  const formatFlightCurrencyWithCode = (value: number) =>
+    `${formatCurrency(value, flightCurrencyCode)} ${flightCurrencyCode}`;
 
   return (
     <div className="min-h-screen pb-16">
@@ -157,16 +159,17 @@ export default async function Home() {
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Latest flight signal</p>
             <h2 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
-              {latestFlight ? flightCurrency.format(latestFlight.price) : "--"}
+              {latestFlight ? formatFlightCurrencyWithCode(latestFlight.price) : "--"}
             </h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
               Checked {latestFlight ? formatDateTime(latestFlight.checked_at) : "n/a"}
             </p>
+            <p className="mt-1 text-xs text-[var(--muted)]">Currency: {flightCurrencyCode}</p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs uppercase text-[var(--muted)]">7-day median</p>
                 <p className="text-xl font-semibold text-[var(--foreground)]">
-                  {flightCurrency.format(getMedianPrice(flightHistory.slice(-7)))}
+                  {formatFlightCurrencyWithCode(getMedianPrice(flightHistory.slice(-7)))}
                 </p>
               </div>
               <div>
@@ -177,7 +180,7 @@ export default async function Home() {
                   }`}
                 >
                   {flightDelta >= 0 ? "+" : "-"}
-                  {flightCurrency.format(Math.abs(flightDelta))}
+                  {formatFlightCurrencyWithCode(Math.abs(flightDelta))}
                 </p>
               </div>
             </div>

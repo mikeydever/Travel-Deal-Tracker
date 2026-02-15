@@ -19,6 +19,7 @@ export default async function FlightsPage() {
 
   const currencyCode = latest?.currency ?? history[0]?.currency ?? "CAD";
   const currency = new Intl.NumberFormat("en-CA", { style: "currency", currency: currencyCode });
+  const formatCurrencyWithCode = (value: number) => `${currency.format(value)} ${currencyCode}`;
 
   const chartData = history.map((row) => ({
     checkedAt: row.checked_at,
@@ -48,7 +49,9 @@ export default async function FlightsPage() {
   const minOffer = topOverall.length ? Math.min(...topOverall.map((offer) => offer.price)) : null;
   const maxOffer = topOverall.length ? Math.max(...topOverall.map((offer) => offer.price)) : null;
   const rangeLabel =
-    minOffer !== null && maxOffer !== null ? `${currency.format(minOffer)} – ${currency.format(maxOffer)}` : "--";
+    minOffer !== null && maxOffer !== null
+      ? `${formatCurrencyWithCode(minOffer)} – ${formatCurrencyWithCode(maxOffer)}`
+      : "--";
   const bestDirectOffer = topDirect[0];
   const showBestDirect =
     Boolean(bestDirectOffer) &&
@@ -82,10 +85,13 @@ export default async function FlightsPage() {
             <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--sand)]/40 px-6 py-4 text-sm text-[var(--muted)]">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Latest fare</p>
               <p className="text-3xl font-semibold text-[var(--foreground)]">
-                {latest ? currency.format(latest.price) : "--"}
+                {latest ? formatCurrencyWithCode(latest.price) : "--"}
               </p>
               {latest && (
-                <p className="mt-2 text-xs text-[var(--muted)]">Checked {formatDateTime(latest.checked_at)}</p>
+                <>
+                  <p className="mt-2 text-xs text-[var(--muted)]">Checked {formatDateTime(latest.checked_at)}</p>
+                  <p className="mt-1 text-xs text-[var(--muted)]">Currency: {currencyCode}</p>
+                </>
               )}
             </div>
           </div>
@@ -102,7 +108,7 @@ export default async function FlightsPage() {
             </h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
               Comparison vs. previous run shows {priceDelta >= 0 ? "a bump of" : "a drop of"}{" "}
-              {currency.format(Math.abs(priceDelta))} ({deltaPercentage.toFixed(1)}%).
+              {formatCurrencyWithCode(Math.abs(priceDelta))} ({deltaPercentage.toFixed(1)}%).
             </p>
           </div>
           <div
@@ -116,7 +122,7 @@ export default async function FlightsPage() {
           </div>
         </div>
         <div className="mt-6 rounded-2xl bg-[var(--sand)]/50 p-4">
-          <FlightTrendChart data={chartData} />
+          <FlightTrendChart data={chartData} currencyCode={currencyCode} />
         </div>
       </section>
 
@@ -138,7 +144,7 @@ export default async function FlightsPage() {
           <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Benchmark</p>
           <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">Median (last 7 days)</h3>
           <p className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
-            {history.length ? currency.format(getMedianPrice(history.slice(-7))) : "--"}
+            {history.length ? formatCurrencyWithCode(getMedianPrice(history.slice(-7))) : "--"}
           </p>
           <p className="mt-2 text-sm text-[var(--muted)]">
             We use the 7-day median as our quick sanity check for alert thresholds.
@@ -217,7 +223,10 @@ const formatOfferSummary = (offer: FlightOffer) => {
   const stops = offer.stops === 0 ? "Direct" : `${offer.stops} stops`;
   const totalDurationMinutes = offer.combinedDurationMinutes ?? Math.round((offer.durationHours ?? 0) * 60);
   const duration = totalDurationMinutes > 0 ? formatDuration(totalDurationMinutes) : "Duration n/a";
-  return `${offer.carrier} • ${offer.fareClass} • ${stops} • ${duration}`;
+  const amount = new Intl.NumberFormat("en-CA", { style: "currency", currency: offer.currency }).format(
+    offer.price
+  );
+  return `${offer.carrier} • ${offer.fareClass} • ${amount} ${offer.currency} • ${stops} • ${duration}`;
 };
 
 const getLegacyCarrierMetadata = (metadata: unknown) => {

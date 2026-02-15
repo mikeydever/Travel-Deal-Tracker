@@ -18,14 +18,22 @@ interface FlightTrendChartProps {
     checkedAt: string;
     price: number;
   }>;
+  currencyCode?: string;
 }
 
 const formatLabel = (value: string) =>
   new Date(value).toLocaleDateString("en", { month: "short", day: "numeric" });
 
-const currencyFormatter = (value: number) => `$${value.toFixed(0)}`;
+const formatCurrency = (value: number, currencyCode: string) => {
+  const formatted = new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: currencyCode,
+    maximumFractionDigits: 0,
+  }).format(value);
+  return `${formatted} ${currencyCode}`;
+};
 
-export function FlightTrendChart({ data }: FlightTrendChartProps) {
+export function FlightTrendChart({ data, currencyCode = "CAD" }: FlightTrendChartProps) {
   const mounted = useClientReady();
 
   if (!mounted) {
@@ -47,13 +55,13 @@ export function FlightTrendChart({ data }: FlightTrendChartProps) {
           domain={["auto", "auto"]}
           stroke="var(--muted)"
           fontSize={12}
-          tickFormatter={currencyFormatter}
+          tickFormatter={(value: number) => formatCurrency(Number(value ?? 0), currencyCode)}
           tickLine={false}
-          width={60}
+          width={96}
         />
         <Tooltip
           formatter={(value: number | undefined) =>
-            currencyFormatter(Number(value ?? 0))
+            formatCurrency(Number(value ?? 0), currencyCode)
           }
 
           labelFormatter={(label: ReactNode) =>

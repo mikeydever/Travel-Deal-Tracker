@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 
 const formatCurrency = (value: number, currency = "CAD") =>
   new Intl.NumberFormat("en-CA", { style: "currency", currency }).format(value);
+const formatCurrencyWithCode = (value: number, currency = "CAD") =>
+  `${formatCurrency(value, currency)} ${currency}`;
 
 const formatDuration = (minutes?: number, hours?: number) => {
   if (typeof minutes === "number") {
@@ -44,7 +46,7 @@ const OfferCard = ({ offer, highlight }: { offer: FlightOffer; highlight?: strin
         <div className="text-right">
           <p className="text-xs text-[var(--muted)]">Total</p>
           <p className="text-2xl font-semibold text-[var(--foreground)]">
-            {formatCurrency(offer.price, offer.currency)}
+            {formatCurrencyWithCode(offer.price, offer.currency)}
           </p>
           <p className="text-xs text-[var(--muted)]">
             {offer.stops === 0 ? "Direct" : `${offer.stops} stops`} • {formatDuration(offer.combinedDurationMinutes, offer.durationHours)}
@@ -66,7 +68,7 @@ export default async function FlightOffersPage() {
   const topDirect = offers?.topDirect ?? [];
 
   const range = topOverall.length
-    ? `${formatCurrency(Math.min(...topOverall.map((o) => o.price)), topOverall[0].currency)} – ${formatCurrency(
+    ? `${formatCurrencyWithCode(Math.min(...topOverall.map((o) => o.price)), topOverall[0].currency)} – ${formatCurrencyWithCode(
         Math.max(...topOverall.map((o) => o.price)),
         topOverall[0].currency
       )}`
