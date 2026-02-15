@@ -215,7 +215,7 @@ export default async function Home() {
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-semibold text-[var(--foreground)]">
-                      {formatCurrency(sample.avg_price, sample.currency)}
+                      {formatCurrency(sample.avg_price, sample.currency)} {sample.currency}
                     </p>
                     <p className="text-xs text-[var(--muted)]">
                       {new Date(sample.checked_at).toLocaleDateString("en", {

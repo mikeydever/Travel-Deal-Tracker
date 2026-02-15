@@ -13,6 +13,8 @@ const formatCurrency = (value: number, currency = "CAD") => {
   }
   return currencyFormatters.get(currency)?.format(value) ?? `${value.toFixed(0)} ${currency}`;
 };
+const formatCurrencyWithCode = (value: number, currency = "CAD") =>
+  `${formatCurrency(value, currency)} ${currency}`;
 
 const formatTimestamp = (value: string | Date) =>
   new Date(value).toLocaleDateString("en", { month: "short", day: "numeric" });
@@ -89,7 +91,7 @@ export default async function HotelsPage() {
                 <div>
                   <p className="text-xs uppercase tracking-wide text-[var(--muted)]">{row.city}</p>
                   <p className="text-2xl font-semibold text-[var(--foreground)]">
-                    {formatCurrency(row.avg_price, row.currency)}
+                    {formatCurrencyWithCode(row.avg_price, row.currency)}
                   </p>
                 </div>
                 <span className="text-xs text-[var(--muted)]">{formatTimestamp(row.checked_at)}</span>
@@ -115,13 +117,13 @@ export default async function HotelsPage() {
                 <div>
                   <p className="text-xs uppercase tracking-wide text-[var(--muted)]">{card.city}</p>
                   <p className="text-lg font-semibold text-[var(--foreground)]">
-                    {formatCurrency(card.rows.at(-1)?.avg_price ?? 0, card.currency)}
+                    {formatCurrencyWithCode(card.rows.at(-1)?.avg_price ?? 0, card.currency)}
                   </p>
                 </div>
                 <p className="text-xs text-[var(--muted)]">↑ {getRange(card.rows, card.currency)} range</p>
               </div>
               <div className="mt-3 rounded-xl bg-[var(--card)] p-2">
-                <HotelSparkline data={card.data} />
+                <HotelSparkline data={card.data} currencyCode={card.currency} />
               </div>
             </article>
           ))}
@@ -136,7 +138,7 @@ const getRange = (rows: { avg_price: number }[], currency: string) => {
   const prices = rows.map((row) => row.avg_price);
   const max = Math.max(...prices);
   const min = Math.min(...prices);
-  return formatCurrency(Math.round(max - min), currency);
+  return formatCurrencyWithCode(Math.round(max - min), currency);
 };
 
 const addDays = (value: string, days: number) => {

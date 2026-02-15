@@ -5,12 +5,20 @@ import type { TooltipProps } from "recharts";
 
 interface HotelSparklineProps {
   data: Array<{ checkedAt: string; avgPrice: number }>;
+  currencyCode?: string;
 }
 
-const formatter = (value: number) => `$${value.toFixed(0)}`;
+const formatCurrency = (value: number, currencyCode: string) => {
+  const formatted = new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: currencyCode,
+    maximumFractionDigits: 0,
+  }).format(value);
+  return `${formatted} ${currencyCode}`;
+};
 
-const tooltipFormatter: TooltipProps<number, string>["formatter"] = (value) =>
-  formatter(Number(value ?? 0));
+const buildTooltipFormatter = (currencyCode: string): TooltipProps<number, string>["formatter"] =>
+  (value) => formatCurrency(Number(value ?? 0), currencyCode);
 
 const formatTooltipDate = (value?: string) => {
   if (!value) return "Unknown date";
@@ -24,7 +32,7 @@ const tooltipLabelFormatter: TooltipProps<number, string>["labelFormatter"] = (_
   return formatTooltipDate(row?.checkedAt);
 };
 
-export function HotelSparkline({ data }: HotelSparklineProps) {
+export function HotelSparkline({ data, currencyCode = "CAD" }: HotelSparklineProps) {
   return (
     <ResponsiveContainer width="100%" height={120}>
       <AreaChart data={data} margin={{ left: 0, right: 0, top: 5, bottom: 0 }}>
@@ -35,7 +43,7 @@ export function HotelSparkline({ data }: HotelSparklineProps) {
           </linearGradient>
         </defs>
         <Tooltip
-          formatter={tooltipFormatter}
+          formatter={buildTooltipFormatter(currencyCode)}
           labelFormatter={tooltipLabelFormatter}
           contentStyle={{
             borderRadius: 12,
