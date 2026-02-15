@@ -70,6 +70,8 @@ export interface HotelMetadata {
   priceMin?: number;
   priceMedian?: number;
   priceMax?: number;
+  qualityFloor?: number;
+  filteredOutCount?: number;
 }
 
 export interface HotelAverageResponse {

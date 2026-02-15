@@ -74,6 +74,23 @@ const selectBudgetSlice = (prices: number[]) => {
   return sorted.slice(0, size);
 };
 
+const getPercentile = (sortedValues: number[], percentile: number) => {
+  if (!sortedValues.length) return 0;
+  const index = Math.min(
+    sortedValues.length - 1,
+    Math.max(0, Math.floor((sortedValues.length - 1) * percentile))
+  );
+  return sortedValues[index];
+};
+
+const deriveQualityFloor = (sortedValues: number[]) => {
+  const median = getMedian(sortedValues);
+  const q1 = getPercentile(sortedValues, 0.25);
+  const relativeFloor = Math.max(median * 0.55, q1 * 0.75);
+  const absoluteFloor = 45;
+  return Math.round(Math.max(absoluteFloor, relativeFloor) * 100) / 100;
+};
+
 const extractCurrencyFromTrackingKey = (trackingKey?: string | null) => {
   if (!trackingKey) return undefined;
   try {
@@ -312,12 +329,15 @@ const buildHotelAverage = (
     throw new Error(`No hotel prices found for ${city}`);
   }
 
-  const budgetSlice = selectBudgetSlice(prices);
+  const sortedAll = [...prices].sort((a, b) => a - b);
+  const median = getMedian(sortedAll);
+  const qualityFloor = deriveQualityFloor(sortedAll);
+  const eligiblePrices = sortedAll.filter((price) => price >= qualityFloor);
+  const qualityPool = eligiblePrices.length >= 5 ? eligiblePrices : sortedAll;
+  const budgetSlice = selectBudgetSlice(qualityPool);
   const budgetTotal = budgetSlice.reduce((sum, value) => sum + value, 0);
   const avgPrice = Math.round((budgetTotal / budgetSlice.length) * 100) / 100;
   const currencyDetected = extractCurrency(payload, params.currency);
-  const sortedAll = [...prices].sort((a, b) => a - b);
-  const median = getMedian(sortedAll);
 
   const metadata: HotelMetadata = {
     source: "rapidapi",
@@ -329,10 +349,12 @@ const buildHotelAverage = (
     totalHotels: hotels.length,
     currencyRequested: params.currency,
     currencyDetected,
-    pricingModel: "budget_avg_bottom_35pct",
+    pricingModel: "budget_avg_bottom_35pct_with_quality_floor",
     priceMin: sortedAll[0],
     priceMedian: Math.round(median * 100) / 100,
     priceMax: sortedAll[sortedAll.length - 1],
+    qualityFloor,
+    filteredOutCount: sortedAll.length - eligiblePrices.length,
   };
 
   return {
