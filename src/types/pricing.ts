@@ -11,7 +11,7 @@ export interface FlightLegMeta {
 }
 
 export interface FlightMetadata {
-  source?: "mock" | "rapidapi";
+  source?: "mock" | "rapidapi" | "travelpayouts";
   outbound?: FlightLegMeta;
   returnLeg?: FlightLegMeta;
   combinedStops?: number;

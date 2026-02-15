@@ -7,7 +7,7 @@ export interface FlightAgentResult {
   price?: number;
   carrier?: string;
   fareClass?: string;
-  source?: "mock" | "rapidapi";
+  source?: "mock" | "rapidapi" | "travelpayouts";
 }
 
 export const runFlightAgent = async (): Promise<FlightAgentResult> => {
