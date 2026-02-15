@@ -1,4 +1,5 @@
-import { AGENT_PIPELINES, PRIMARY_TRIP, THAI_HUB_CITIES } from "@/config/travel";
+import Link from "next/link";
+import { PRIMARY_TRIP, THAI_HUB_CITIES } from "@/config/travel";
 import { NavPills } from "@/components/NavPills";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getLatestFlightSample, getRecentFlightPrices } from "@/data/flightPrices";
@@ -18,12 +19,6 @@ const formatCurrency = (value: number, currency = "CAD") => {
   }
   return currencyFormatters.get(currency)?.format(value) ?? `${value.toFixed(0)} ${currency}`;
 };
-
-const readinessChecklist = [
-  "Supabase schema planned",
-  "Mock adapters ready if APIs are missing",
-  "Alert definitions confirmed (>15% drop & historical low)",
-];
 
 const formatDateTime = (value: string | Date) =>
   new Date(value).toLocaleString("en", {
@@ -104,8 +99,11 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-3">
-          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+        <section className="grid gap-6 lg:grid-cols-2">
+          <Link
+            href="/flights"
+            className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Primary route</p>
             <h2 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
               {PRIMARY_TRIP.origin} → {PRIMARY_TRIP.destination}
@@ -125,9 +123,15 @@ export default async function Home() {
                 <p className="text-lg font-semibold text-[var(--foreground)]">{PRIMARY_TRIP.cabin}</p>
               </div>
             </div>
-          </article>
+            <p className="mt-4 text-sm font-medium text-[var(--accent)] transition group-hover:translate-x-1">
+              Open Flights →
+            </p>
+          </Link>
 
-          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+          <Link
+            href="/hotels"
+            className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Hotel focus</p>
             <h2 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">5 cities</h2>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-[var(--muted)]">
@@ -140,20 +144,17 @@ export default async function Home() {
                 </span>
               ))}
             </div>
-          </article>
-
-          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Deal triggers</p>
-            <ul className="mt-4 space-y-3 text-sm text-[var(--muted)]">
-              <li>↘︎ 15% drop vs 30-day average</li>
-              <li>⚡ Historical low detected</li>
-              <li>🪄 Manual override for key events</li>
-            </ul>
-          </article>
+            <p className="mt-4 text-sm font-medium text-[var(--accent)] transition group-hover:translate-x-1">
+              Open Hotels →
+            </p>
+          </Link>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+          <Link
+            href="/flights"
+            className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Latest flight signal</p>
             <h2 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
               {latestFlight ? flightCurrency.format(latestFlight.price) : "--"}
@@ -183,9 +184,23 @@ export default async function Home() {
             <p className="mt-3 text-sm text-[var(--muted)]">
               Carrier insights update once live data streams in.
             </p>
-          </article>
+            <div className="mt-4 rounded-2xl border border-[var(--card-border)] bg-[var(--sand)]/30 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Deal triggers</p>
+              <ul className="mt-2 space-y-1 text-sm text-[var(--muted)]">
+                <li>↘︎ 15% drop vs 30-day average</li>
+                <li>⚡ Historical low detected</li>
+                <li>🪄 Manual override for key events</li>
+              </ul>
+            </div>
+            <p className="mt-4 text-sm font-medium text-[var(--accent)] transition group-hover:translate-x-1">
+              Open Flights →
+            </p>
+          </Link>
 
-          <article className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+          <Link
+            href="/hotels"
+            className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Hotel snapshot</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Nightly averages</h2>
             <ul className="mt-4 space-y-3">
@@ -209,49 +224,10 @@ export default async function Home() {
                 </li>
               ))}
             </ul>
-          </article>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-3">
-          {AGENT_PIPELINES.map((pipeline) => (
-            <article
-              key={pipeline.title}
-              className="flex flex-col gap-4 rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]"
-            >
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Automation</p>
-                <h3 className="text-xl font-semibold text-[var(--foreground)]">{pipeline.title}</h3>
-              </div>
-              <p className="text-sm font-medium text-[var(--accent)]">{pipeline.cadence}</p>
-              <p className="text-sm text-[var(--muted)]">{pipeline.summary}</p>
-            </article>
-          ))}
-        </section>
-
-        <section className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--muted)]">Launch checklist</p>
-              <h3 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">MVP readiness</h3>
-              <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
-                These are the guardrails we keep in sight while building the upcoming phases: data model,
-                collectors, charts, and alerts.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-[var(--accent)]/15 px-4 py-3 text-sm text-[var(--accent)]">
-              Scheduler: cron-friendly, single run per day.
-            </div>
-          </div>
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-            {readinessChecklist.map((item) => (
-              <li
-                key={item}
-                className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--sand)]/40 px-4 py-3 text-sm text-[var(--muted)]"
-              >
-                {item}
-              </li>
-            ))}
-          </ul>
+            <p className="mt-4 text-sm font-medium text-[var(--accent)] transition group-hover:translate-x-1">
+              Open Hotels →
+            </p>
+          </Link>
         </section>
       </div>
     </div>
