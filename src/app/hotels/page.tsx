@@ -1,6 +1,7 @@
 import { NavPills } from "@/components/NavPills";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { HotelSparkline } from "@/components/charts/HotelSparkline";
+import { HOTEL_SEARCH_DEFAULT_NIGHTS, PRIMARY_TRIP } from "@/config/travel";
 import { getHotelHistoryByCity, getLatestHotelSnapshots } from "@/data/hotelPrices";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,11 @@ export default async function HotelsPage() {
   ]);
 
   const latestTimestamp = snapshots[0]?.checked_at;
+  const metadataWindow = snapshots.find(
+    (row) => row.metadata?.checkIn && row.metadata?.checkOut
+  )?.metadata;
+  const checkIn = metadataWindow?.checkIn ?? PRIMARY_TRIP.departDate;
+  const checkOut = metadataWindow?.checkOut ?? addDays(PRIMARY_TRIP.departDate, HOTEL_SEARCH_DEFAULT_NIGHTS);
 
   const chartCards = Object.entries(historyByCity).map(([city, rows]) => ({
     city,
@@ -65,7 +71,8 @@ export default async function HotelsPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[var(--muted)]">Snapshot</p>
             <h2 className="text-2xl font-semibold text-[var(--foreground)]">Current nightly ranges</h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Prices shown below represent the last pull per city. Use charts to inspect intra-week swings.
+              Prices shown below are sampled daily for stays between {formatIsoDate(checkIn)} and{" "}
+              {formatIsoDate(checkOut)}. Use charts to inspect day-to-day pull swings.
             </p>
           </div>
           <div className="rounded-full bg-[var(--accent)]/15 px-4 py-2 text-sm font-medium text-[var(--accent)]">
@@ -131,3 +138,13 @@ const getRange = (rows: { avg_price: number }[], currency: string) => {
   const min = Math.min(...prices);
   return formatCurrency(Math.round(max - min), currency);
 };
+
+const addDays = (value: string, days: number) => {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
+const formatIsoDate = (value: string) =>
+  new Date(`${value}T00:00:00Z`).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" });

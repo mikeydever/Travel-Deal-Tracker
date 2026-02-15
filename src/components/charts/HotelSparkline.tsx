@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import type { TooltipProps } from "recharts";
 
 interface HotelSparklineProps {
@@ -12,8 +12,17 @@ const formatter = (value: number) => `$${value.toFixed(0)}`;
 const tooltipFormatter: TooltipProps<number, string>["formatter"] = (value) =>
   formatter(Number(value ?? 0));
 
-const tooltipLabelFormatter: TooltipProps<number, string>["labelFormatter"] = (label) =>
-  new Date(label ?? "").toLocaleDateString("en", { month: "short", day: "numeric" });
+const formatTooltipDate = (value?: string) => {
+  if (!value) return "Unknown date";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Unknown date";
+  return parsed.toLocaleDateString("en", { month: "short", day: "numeric" });
+};
+
+const tooltipLabelFormatter: TooltipProps<number, string>["labelFormatter"] = (_label, payload) => {
+  const row = payload?.[0]?.payload as { checkedAt?: string } | undefined;
+  return formatTooltipDate(row?.checkedAt);
+};
 
 export function HotelSparkline({ data }: HotelSparklineProps) {
   return (
@@ -36,6 +45,7 @@ export function HotelSparkline({ data }: HotelSparklineProps) {
             boxShadow: "var(--shadow-soft)",
           }}
         />
+        <XAxis dataKey="checkedAt" hide />
         <Area
           type="monotone"
           dataKey="avgPrice"
