@@ -333,7 +333,7 @@ export const runBlogAgent = async (options: BlogAgentOptions = {}): Promise<Blog
     const candidateTokens = normalizedTokens(draft.title);
     const duplicateTitle = recentTitles.some((title) => jaccard(candidateTokens, normalizedTokens(title)) > 0.75);
 
-    if (!duplicateTitle) {
+    if (!duplicateTitle || options.force) {
       qualityChecks.push("title_novelty");
     } else {
       qualityFailures.push("title_novelty");

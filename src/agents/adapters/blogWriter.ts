@@ -46,7 +46,7 @@ const fallbackDraft = (input: BlogWriterInput): BlogDraft => {
     "Option C (slow pace): two-city plan with fewer transfers and longer stays.";
 
   return {
-    title: `Thailand trip pricing update for ${input.publishDate}`,
+    title: `18-day Thailand itinerary and pricing update (${input.publishDate})`,
     summary:
       `Daily update for an ${input.planningDays}-day usable trip window, blending route-level pricing with itinerary tradeoffs.`,
     takeaway:
@@ -138,6 +138,7 @@ const buildPrompt = (input: BlogWriterInput) =>
     "Use concrete numbers, dates, and route/city context from the input.",
     "Do not invent facts or URLs.",
     "Return fields: title, summary, takeaway, confidence, sections.",
+    "Title must be specific and distinct from generic daily update phrasing.",
     "sections must be an array of exactly 4 objects with keys: heading, paragraphs.",
     "Each paragraphs array should contain exactly 2 short paragraphs.",
     "Section 2 must present at least 3 itinerary options for an 18-day usable trip and include day-allocation tradeoffs.",
