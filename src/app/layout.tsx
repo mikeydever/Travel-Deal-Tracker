@@ -23,6 +23,14 @@ export const metadata: Metadata = {
   title: "Travel Deal Tracker",
   description:
     "Daily flight + hotel intelligence for the Vancouver to Thailand corridor.",
+  icons: {
+    icon: [
+      { url: "/yourfuture-favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: ["/yourfuture-favicon.svg"],
+    apple: [{ url: "/yourfuture-favicon.svg" }],
+  },
 };
 
 export default function RootLayout({
