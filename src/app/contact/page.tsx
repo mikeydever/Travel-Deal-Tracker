@@ -24,11 +24,11 @@ export default function ContactPage() {
 
       <section className="grid gap-4 sm:grid-cols-2">
         <a
-          href="mailto:hello@yourfuture.club"
+          href="mailto:michaelwindeyermarketing@gmail.com"
           className="rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:border-[var(--accent)]/55"
         >
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[var(--muted)]">Email</p>
-          <p className="mt-2 text-xl font-semibold text-[var(--foreground)]">hello@yourfuture.club</p>
+          <p className="mt-2 text-xl font-semibold text-[var(--foreground)]">michaelwindeyermarketing@gmail.com</p>
           <p className="mt-2 text-sm text-[var(--muted)]">General questions and corrections.</p>
         </a>
 
