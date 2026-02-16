@@ -1,4 +1,6 @@
 import {
+  BLOG_BRAVE_MAX_RETRIES,
+  BLOG_BRAVE_MIN_INTERVAL_MS,
   BLOG_MAX_SEARCH_RESULTS,
   BLOG_MAX_SOURCES,
   BLOG_MIN_EXTERNAL_SOURCES,
@@ -48,22 +50,51 @@ const isTrustedDomain = (hostname: string) =>
     (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
   );
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const searchBraveWithBackoff = async (query: string) => {
+  let attempt = 0;
+  while (attempt < BLOG_BRAVE_MAX_RETRIES) {
+    try {
+      return await searchBrave(query, BLOG_MAX_SEARCH_RESULTS);
+    } catch (error) {
+      attempt += 1;
+      const isRateLimited =
+        error instanceof Error && /\(429\)|rate limit|too many requests/i.test(error.message);
+      if (!isRateLimited || attempt >= BLOG_BRAVE_MAX_RETRIES) {
+        throw error;
+      }
+      await wait(BLOG_BRAVE_MIN_INTERVAL_MS * attempt);
+    }
+  }
+
+  return [];
+};
+
 const collectExternalSources = async (): Promise<BlogSource[]> => {
   if (!env.BRAVE_SEARCH_API_KEY) {
     return [];
   }
 
-  const aggregated = await Promise.all(
-    BLOG_SOURCE_QUERIES.map(async (query) => {
-      try {
-        const results = await searchBrave(query, BLOG_MAX_SEARCH_RESULTS);
-        return results;
-      } catch (error) {
-        console.warn("[blogAgent] source search failed", query, error);
-        return [];
-      }
-    })
-  );
+  const aggregated: Array<Awaited<ReturnType<typeof searchBrave>>> = [];
+  let lastRequestAt = 0;
+
+  for (const query of BLOG_SOURCE_QUERIES) {
+    const elapsed = Date.now() - lastRequestAt;
+    if (lastRequestAt > 0 && elapsed < BLOG_BRAVE_MIN_INTERVAL_MS) {
+      await wait(BLOG_BRAVE_MIN_INTERVAL_MS - elapsed);
+    }
+
+    try {
+      const results = await searchBraveWithBackoff(query);
+      aggregated.push(results);
+    } catch (error) {
+      console.warn("[blogAgent] source search failed", query, error);
+      aggregated.push([]);
+    }
+
+    lastRequestAt = Date.now();
+  }
 
   const seen = new Set<string>();
   const filtered: BlogSource[] = [];

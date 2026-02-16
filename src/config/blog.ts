@@ -28,3 +28,5 @@ export const BLOG_TRUSTED_DOMAINS = [
 export const BLOG_MAX_SEARCH_RESULTS = 5;
 export const BLOG_MAX_SOURCES = 6;
 export const BLOG_MIN_NOVELTY_SCORE = 0.55;
+export const BLOG_BRAVE_MIN_INTERVAL_MS = 1200;
+export const BLOG_BRAVE_MAX_RETRIES = 3;
