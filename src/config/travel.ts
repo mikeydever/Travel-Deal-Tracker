@@ -59,6 +59,12 @@ export const AGENT_PIPELINES = [
     summary: "Generates short-form itineraries aligned with price signals and deals.",
   },
   {
+    title: "Blog Agent",
+    cadence: "Daily • 07:30 PT",
+    summary:
+      "Builds source-backed trip updates using internal price deltas plus curated external travel signals.",
+  },
+  {
     title: "Events Agent",
     cadence: "Bi-weekly",
     summary: "Keeps the Thai festival calendar fresh so we can flag demand spikes early.",

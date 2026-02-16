@@ -44,3 +44,15 @@ Responsibilities:
 - Maintain event list
 - Update occasionally
 - Suggest date windows + locations for pricing focus
+
+---
+
+## Blog Agent
+Responsibilities:
+- Pull curated travel sources + internal price deltas
+- Generate source-backed daily post draft
+- Enforce quality gates before publish
+- Save published and draft posts
+
+Runs:
+- Daily

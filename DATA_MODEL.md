@@ -84,3 +84,18 @@
 - summary
 - days (json)
 - score
+
+---
+
+## blog_posts
+- id
+- slug
+- title
+- summary
+- status
+- published_at
+- content (json)
+- sources (json)
+- metadata (json)
+- created_at
+- updated_at

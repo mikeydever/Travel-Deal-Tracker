@@ -5,6 +5,7 @@ import { runHotelAgent } from "@/agents/hotelAgent";
 import { runPhotoAgent } from "@/agents/photoAgent";
 import { runExperienceScoutAgent } from "@/agents/experienceScoutAgent";
 import { runItineraryAgent } from "@/agents/itineraryAgent";
+import { runBlogAgent } from "@/agents/blogAgent";
 import { env } from "@/lib/env";
 import { evaluateDealTriggers } from "@/services/dealDetection";
 
@@ -17,7 +18,8 @@ type CronScope =
   | "flights"
   | "photo"
   | "experiences"
-  | "itinerary";
+  | "itinerary"
+  | "blog";
 
 const authorize = (request: Request) => {
   if (!env.CRON_SECRET) {
@@ -39,6 +41,7 @@ const resolveScope = (request: Request): CronScope => {
   if (scope === "photo" || scope === "photos") return "photo";
   if (scope === "experience" || scope === "experiences") return "experiences";
   if (scope === "itinerary" || scope === "itineraries") return "itinerary";
+  if (scope === "blog" || scope === "posts") return "blog";
   return "all";
 };
 
@@ -55,6 +58,7 @@ export async function POST(request: Request) {
     const runPhoto = scope === "all" || scope === "photo";
     const runExperiences = scope === "all" || scope === "experiences";
     const runItinerary = scope === "all" || scope === "itinerary";
+    const runBlog = scope === "all" || scope === "blog";
     const parseLimit = (value: string | null) => {
       const parsed = Number(value);
       if (!Number.isFinite(parsed)) return undefined;
@@ -64,7 +68,7 @@ export async function POST(request: Request) {
     const experienceLimit = parseLimit(url.searchParams.get("limit"));
     const experienceQueries = parseLimit(url.searchParams.get("queries"));
 
-    const [flightResult, hotelResult, photoResult, experienceResult, itineraryResult] =
+    const [flightResult, hotelResult, photoResult, experienceResult, itineraryResult, blogResult] =
       await Promise.all([
         runFlights ? runFlightAgent() : null,
         runHotels ? runHotelAgent() : null,
@@ -76,6 +80,7 @@ export async function POST(request: Request) {
             })
           : null,
         runItinerary ? runItineraryAgent() : null,
+        runBlog ? runBlogAgent() : null,
       ]);
 
     const alerts = scope === "all" ? await evaluateDealTriggers() : [];
@@ -88,6 +93,7 @@ export async function POST(request: Request) {
       photoResult,
       experienceResult,
       itineraryResult,
+      blogResult,
       alerts,
       timestamp: new Date().toISOString(),
     });

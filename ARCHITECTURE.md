@@ -11,7 +11,7 @@
 ## Backend
 - Next.js API routes OR Node service
 - Scheduled jobs via cron or serverless scheduler
-- Agents: flight, hotel, photo, experiences scout, itinerary generator
+- Agents: flight, hotel, photo, experiences scout, itinerary generator, blog writer
 
 ---
 
@@ -26,6 +26,7 @@ Tables:
 - daily_photos
 - experience_deals
 - itinerary_suggestions
+- blog_posts
 
 ---
 
@@ -36,6 +37,7 @@ Preferred:
 - Pexels (daily photo)
 - Brave Search (experiences scout)
 - OpenAI (deal extraction + itinerary narration)
+- Anthropic Claude (optional blog drafting)
 
 Fallback:
 - Mock data if API unavailable
@@ -53,3 +55,4 @@ Daily job:
 - Pull prices
 - Store data
 - Evaluate alerts
+- Generate source-backed blog entry (publish only if quality gates pass)

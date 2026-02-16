@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: "Overview", href: "/" },
   { label: "Flights", href: "/flights" },
   { label: "Hotels", href: "/hotels" },
+  { label: "Blog", href: "/blog" },
   { label: "Guides", href: "/guides" },
   { label: "Experiences", href: "/experiences" },
   { label: "Itinerary", href: "/itinerary" },

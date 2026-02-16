@@ -152,7 +152,24 @@ export default async function Home() {
           </Link>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-3">
+        <section className="grid gap-6 lg:grid-cols-4">
+          <Link
+            href="/blog"
+            className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Market updates</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">Trip blog</h2>
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              Daily source-backed notes combining live price signals with external travel market context.
+            </p>
+            <p className="mt-4 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+              Quality-gated publishing
+            </p>
+            <p className="mt-4 text-sm font-medium text-[var(--accent)] transition group-hover:translate-x-1">
+              Open Blog →
+            </p>
+          </Link>
+
           <Link
             href="/guides"
             className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
