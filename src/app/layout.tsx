@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
+import { SiteFooter } from "@/components/SiteFooter";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -66,7 +67,10 @@ export default function RootLayout({
         <div className="page-shell">
           <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_80%_20%,_rgba(245,194,91,0.12),_transparent_55%)]" />
           <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-64 bg-gradient-to-b from-[rgba(255,255,255,0.6)] to-transparent" />
-          <div className="relative">{children}</div>
+          <div className="relative">
+            {children}
+            <SiteFooter />
+          </div>
         </div>
       </body>
     </html>

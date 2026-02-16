@@ -152,6 +152,53 @@ export default async function Home() {
           </Link>
         </section>
 
+        <section className="grid gap-6 lg:grid-cols-3">
+          <Link
+            href="/guides"
+            className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Trip content</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">Original guides</h2>
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              Neighborhood picks, hotel decision rules, and route tradeoffs written for this exact trip.
+            </p>
+            <p className="mt-4 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+              Updated weekly
+            </p>
+            <p className="mt-4 text-sm font-medium text-[var(--accent)] transition group-hover:translate-x-1">
+              Open Guides →
+            </p>
+          </Link>
+
+          <Link
+            href="/affiliate-disclosure"
+            className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Policy</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">Affiliate disclosure</h2>
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              Clear statement on how partner links are used and how recommendations are evaluated.
+            </p>
+            <p className="mt-4 text-sm font-medium text-[var(--accent)] transition group-hover:translate-x-1">
+              Read Disclosure →
+            </p>
+          </Link>
+
+          <Link
+            href="/contact"
+            className="group rounded-3xl border border-[var(--card-border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Support</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">Contact options</h2>
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              Reach out for corrections, updates, or partnership requests related to this project.
+            </p>
+            <p className="mt-4 text-sm font-medium text-[var(--accent)] transition group-hover:translate-x-1">
+              Open Contact →
+            </p>
+          </Link>
+        </section>
+
         <section className="grid gap-6 lg:grid-cols-2">
           <Link
             href="/flights"

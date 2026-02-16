@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: "Overview", href: "/" },
   { label: "Flights", href: "/flights" },
   { label: "Hotels", href: "/hotels" },
+  { label: "Guides", href: "/guides" },
   { label: "Experiences", href: "/experiences" },
   { label: "Itinerary", href: "/itinerary" },
 ];
@@ -26,7 +27,11 @@ export function NavPills({ className = "" }: NavPillsProps) {
   return (
     <nav className={`flex flex-wrap gap-3 ${className}`}>
       {NAV_LINKS.map((link) => {
-        const isActive = mounted && pathname === link.href;
+        const isActive =
+          mounted &&
+          (link.href === "/"
+            ? pathname === "/"
+            : pathname === link.href || pathname.startsWith(`${link.href}/`));
         return (
           <Link
             key={link.href}
