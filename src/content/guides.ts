@@ -191,7 +191,7 @@ export const TRIP_GUIDES: TripGuide[] = [
     bookingLinks: [
       { label: "Aviasales route search", href: "https://www.aviasales.com/", note: "Primary route benchmarking" },
       { label: "Trip.com flights", href: "https://www.trip.com/flights/", note: "Secondary fare check" },
-      { label: "CheapOair flights", href: "https://www.cheapoair.com/", note: "Additional fare spread check" }
+      { label: "Booking.com flights", href: "https://www.booking.com/flights/index.html", note: "Additional fare spread check" }
     ]
   }
 ];
