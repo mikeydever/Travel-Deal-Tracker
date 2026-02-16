@@ -67,6 +67,10 @@ export async function POST(request: Request) {
     };
     const experienceLimit = parseLimit(url.searchParams.get("limit"));
     const experienceQueries = parseLimit(url.searchParams.get("queries"));
+    const forceBlog =
+      url.searchParams.get("force") === "1" ||
+      url.searchParams.get("force") === "true" ||
+      url.searchParams.get("forceBlog") === "1";
 
     const [flightResult, hotelResult, photoResult, experienceResult, itineraryResult, blogResult] =
       await Promise.all([
@@ -80,7 +84,7 @@ export async function POST(request: Request) {
             })
           : null,
         runItinerary ? runItineraryAgent() : null,
-        runBlog ? runBlogAgent() : null,
+        runBlog ? runBlogAgent({ force: forceBlog }) : null,
       ]);
 
     const alerts = scope === "all" ? await evaluateDealTriggers() : [];

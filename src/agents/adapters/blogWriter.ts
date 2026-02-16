@@ -4,6 +4,12 @@ import type { BlogSection, BlogSource } from "@/types/blog";
 export interface BlogWriterInput {
   publishDate: string;
   tripWindow: string;
+  planningDays: number;
+  leaveDate: string;
+  likelyArrivalDate: string;
+  returnFlightDate: string;
+  backToWorkDate: string;
+  itineraryOptions: string[];
   internalSignals: string[];
   externalSources: BlogSource[];
   recentTitles: string[];
@@ -29,23 +35,43 @@ interface BlogDraftPayload {
 const fallbackDraft = (input: BlogWriterInput): BlogDraft => {
   const firstSignal = input.internalSignals[0] ?? "Latest pricing checks are in progress.";
   const secondSignal = input.internalSignals[1] ?? "Hotel and flight trends remain under daily monitoring.";
+  const itineraryA =
+    input.itineraryOptions[0] ??
+    "Option A (balanced): travel days at both ends, then Bangkok + Chiang Mai + one beach block.";
+  const itineraryB =
+    input.itineraryOptions[1] ??
+    "Option B (north + beach): short Bangkok start, longer Chiang Mai and Andaman coast split.";
+  const itineraryC =
+    input.itineraryOptions[2] ??
+    "Option C (slow pace): two-city plan with fewer transfers and longer stays.";
 
   return {
     title: `Thailand trip pricing update for ${input.publishDate}`,
     summary:
-      "Daily update blending our route-level price tracker with current travel market signals from approved sources.",
+      `Daily update for an ${input.planningDays}-day usable trip window, blending route-level pricing with itinerary tradeoffs.`,
     takeaway:
-      "Keep booking options refundable until a sustained fare or nightly-rate drop confirms the new lower range.",
+      `Plan around ${input.leaveDate} departure and ${input.returnFlightDate} return, then optimize in-country pacing rather than chasing the absolute cheapest single quote.`,
     sections: [
       {
-        heading: "What changed today",
+        heading: "Market snapshot for this exact window",
         paragraphs: [firstSignal, secondSignal],
       },
       {
-        heading: "Why this matters for this trip",
+        heading: `${input.planningDays}-day itinerary options (travel days included)`,
+        paragraphs: [itineraryA, `${itineraryB} ${itineraryC}`],
+      },
+      {
+        heading: "Date-line and work-return constraints",
         paragraphs: [
-          `This tracker focuses on ${input.tripWindow}. We prioritize stable downward movement over one-off outliers.`,
-          "Once affiliate approvals complete, we will compare the same itinerary quality across more booking brands to isolate true savings.",
+          `Departure target is ${input.leaveDate} from Vancouver, with likely Bangkok arrival around ${input.likelyArrivalDate}.`,
+          `Return flight target is ${input.returnFlightDate} to be ready for work on ${input.backToWorkDate}.`,
+        ],
+      },
+      {
+        heading: "Booking moves this week",
+        paragraphs: [
+          `This tracker focuses on ${input.tripWindow}. Compare like-for-like itinerary quality before switching providers.`,
+          "Use refundable holds and only lock non-refundable rates once a city split and transfer cadence are finalized.",
         ],
       },
     ],
@@ -92,7 +118,7 @@ const parseDraftPayload = (payload: BlogDraftPayload, fallback: BlogDraft): Blog
   const takeaway = typeof payload.takeaway === "string" ? payload.takeaway.trim() : "";
   const sections = normalizeSections(payload.sections);
 
-  if (!title || !summary || !takeaway || sections.length < 2) {
+  if (!title || !summary || !takeaway || sections.length < 4) {
     return fallback;
   }
 
@@ -108,13 +134,15 @@ const parseDraftPayload = (payload: BlogDraftPayload, fallback: BlogDraft): Blog
 
 const buildPrompt = (input: BlogWriterInput) =>
   [
-    "Write a concise, source-backed travel pricing post in strict JSON.",
+    "Write a source-backed travel pricing post in strict JSON.",
     "Use concrete numbers, dates, and route/city context from the input.",
     "Do not invent facts or URLs.",
     "Return fields: title, summary, takeaway, confidence, sections.",
-    "sections must be an array of exactly 3 objects with keys: heading, paragraphs.",
-    "Each paragraphs array should contain 2 short paragraphs.",
-    "Avoid generic SEO filler and keep tone practical.",
+    "sections must be an array of exactly 4 objects with keys: heading, paragraphs.",
+    "Each paragraphs array should contain exactly 2 short paragraphs.",
+    "Section 2 must present at least 3 itinerary options for an 18-day usable trip and include day-allocation tradeoffs.",
+    "One section must explicitly mention the work-return timing and date-line reality.",
+    "Avoid generic SEO filler and keep tone practical, specific, and decision-focused.",
     "Input:",
     JSON.stringify(input, null, 2),
   ].join("\n");

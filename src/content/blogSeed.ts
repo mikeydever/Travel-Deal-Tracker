@@ -4,9 +4,9 @@ export const BLOG_SEED_POSTS: BlogPost[] = [
   {
     id: "seed-2026-02-16-market-setup",
     slug: "thailand-trip-market-setup-feb-16-2026",
-    title: "Thailand Trip Market Setup: What to Watch This Week",
+    title: "Thailand Trip Market Setup: 18-Day Plan With Travel-Day Reality",
     summary:
-      "A baseline update on YVR to Bangkok airfare and Thai hub hotel pricing so we can spot real discounts as approvals land.",
+      "A baseline update for the October 29 to November 16, 2026 travel window, with itinerary pacing tuned to an 18-day usable trip.",
     status: "published",
     publishedAt: "2026-02-16T15:00:00.000Z",
     content: {
@@ -16,8 +16,22 @@ export const BLOG_SEED_POSTS: BlogPost[] = [
         {
           heading: "Flight baseline",
           paragraphs: [
-            "We are tracking economy fares from Vancouver (YVR) to Bangkok (BKK) for the October 28 to November 18, 2026 travel window.",
+            "We are tracking economy fares from Vancouver (YVR) to Bangkok (BKK) for the October 29 to November 16, 2026 travel window.",
             "The decision rule remains simple: prioritize sustained declines versus short-lived outliers and keep itinerary quality constraints (stop count and total travel time).",
+          ],
+        },
+        {
+          heading: "18-day itinerary options",
+          paragraphs: [
+            "Balanced split: 5 nights Bangkok, 4 nights Chiang Mai, and 6 nights in one beach hub, with travel buffers on both ends.",
+            "Slow split: 7 nights Bangkok plus 8 nights in one secondary base to reduce transfer friction and preserve energy.",
+          ],
+        },
+        {
+          heading: "Date-line and work-return constraint",
+          paragraphs: [
+            "Leaving on October 29, 2026 can mean arriving around October 31, 2026 depending on routing and crossing the International Date Line.",
+            "Returning on November 16, 2026 keeps a buffer before work on November 18, 2026.",
           ],
         },
         {
@@ -25,13 +39,6 @@ export const BLOG_SEED_POSTS: BlogPost[] = [
           paragraphs: [
             "Hotel tracking focuses on Bangkok, Chiang Mai, Phuket, Krabi, and Koh Samui with a quality floor to reduce noisy low-end inventory.",
             "This keeps comparisons honest and prevents fake savings caused by mismatched property quality.",
-          ],
-        },
-        {
-          heading: "What changes next",
-          paragraphs: [
-            "As programs approve, we will route additional partner links into guides and track whether broadened inventory produces lower all-in prices.",
-            "Posts will emphasize concrete dates, source links, and price-impact context for this exact trip.",
           ],
         },
       ],

@@ -8,7 +8,7 @@ import {
   BLOG_SOURCE_QUERIES,
   BLOG_TRUSTED_DOMAINS,
 } from "@/config/blog";
-import { PRIMARY_TRIP, THAI_HUB_CITIES } from "@/config/travel";
+import { PRIMARY_TRIP, THAI_HUB_CITIES, TRIP_WORK_WINDOW } from "@/config/travel";
 import {
   getLatestPublishedBlogPost,
   getRecentBlogTitles,
@@ -29,6 +29,10 @@ export interface BlogAgentResult {
   sourceCount?: number;
   noveltyScore?: number;
   provider?: "anthropic" | "openai" | "fallback";
+}
+
+interface BlogAgentOptions {
+  force?: boolean;
 }
 
 interface InternalSignalSnapshot {
@@ -229,12 +233,29 @@ const slugify = (value: string) =>
     .replace(/-+/g, "-")
     .slice(0, 90);
 
-export const runBlogAgent = async (): Promise<BlogAgentResult> => {
+const buildItineraryOptions = () => {
+  const leave = TRIP_WORK_WINDOW.leaveDate;
+  const arrive = TRIP_WORK_WINDOW.likelyArrivalDate;
+  const returnFlight = TRIP_WORK_WINDOW.returnFlightDate;
+
+  return [
+    `Option A (balanced): ${leave} to ${arrive} travel/arrival, then 5 nights Bangkok, 4 nights Chiang Mai, 6 nights Phuket or Krabi, and final buffer before ${returnFlight} return.`,
+    `Option B (north-heavy): ${leave} to ${arrive} travel/arrival, then 4 nights Bangkok, 6 nights Chiang Mai, 5 nights beach, and 3 days for repositioning and departure.`,
+    `Option C (slow pace): ${leave} to ${arrive} travel/arrival, then 7 nights Bangkok plus 8 nights in one secondary base, with fewer transfer days before ${returnFlight}.`,
+  ];
+};
+
+export const runBlogAgent = async (options: BlogAgentOptions = {}): Promise<BlogAgentResult> => {
   const today = new Date().toISOString().slice(0, 10);
 
   try {
     const latestPost = await getLatestPublishedBlogPost();
-    if (latestPost && !latestPost.id.startsWith("seed-") && latestPost.publishedAt.slice(0, 10) === today) {
+    if (
+      !options.force &&
+      latestPost &&
+      !latestPost.id.startsWith("seed-") &&
+      latestPost.publishedAt.slice(0, 10) === today
+    ) {
       return { status: "skipped", reason: "already_published_today", postSlug: latestPost.slug };
     }
 
@@ -258,7 +279,7 @@ export const runBlogAgent = async (): Promise<BlogAgentResult> => {
       maxHotelDeltaPct: internalSignals.maxHotelDeltaPct,
     });
 
-    if (noveltyScore < BLOG_MIN_NOVELTY_SCORE) {
+    if (!options.force && noveltyScore < BLOG_MIN_NOVELTY_SCORE) {
       return {
         status: "skipped",
         reason: "low_novelty",
@@ -270,6 +291,12 @@ export const runBlogAgent = async (): Promise<BlogAgentResult> => {
     const draft = await generateBlogDraft({
       publishDate: today,
       tripWindow: `${PRIMARY_TRIP.origin} to ${PRIMARY_TRIP.destination} (${PRIMARY_TRIP.departDate} to ${PRIMARY_TRIP.returnDate})`,
+      planningDays: TRIP_WORK_WINDOW.planningDays,
+      leaveDate: TRIP_WORK_WINDOW.leaveDate,
+      likelyArrivalDate: TRIP_WORK_WINDOW.likelyArrivalDate,
+      returnFlightDate: TRIP_WORK_WINDOW.returnFlightDate,
+      backToWorkDate: TRIP_WORK_WINDOW.backToWorkDate,
+      itineraryOptions: buildItineraryOptions(),
       internalSignals: internalSignals.lines,
       externalSources,
       recentTitles,

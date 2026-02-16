@@ -1,10 +1,19 @@
 export const PRIMARY_TRIP = {
   origin: "YVR",
   destination: "BKK",
-  departDate: "2026-10-28",
-  returnDate: "2026-11-18",
-  tripLengthDays: 22,
+  departDate: "2026-10-29",
+  returnDate: "2026-11-16",
+  tripLengthDays: 18,
   cabin: "Economy",
+};
+
+export const TRIP_WORK_WINDOW = {
+  ptoDays: 21,
+  leaveDate: "2026-10-29",
+  likelyArrivalDate: "2026-10-31",
+  returnFlightDate: "2026-11-16",
+  backToWorkDate: "2026-11-18",
+  planningDays: 18,
 };
 
 export const HOTEL_SEARCH_DEFAULT_NIGHTS = 5;
